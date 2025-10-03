@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI To-Do List Agent (External API)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen text-white">
+  <div class="w-full max-w-md bg-gray-800 p-6 rounded-2xl shadow-lg">
+    
+    <div id="addTaskScreen" class="space-y-4">
+      <h1 class="text-xl font-bold text-center">AI To-Do List Agent</h1>
+      
+      <textarea id="taskInput" rows="3" placeholder="e.g. Finish urgent homework tomorrow 5pm" 
+        class="w-full p-3 rounded-lg bg-gray-700 text-white focus:outline-none"
+        oninput="handleInput(this.value)"></textarea>
+      
+      <div id="suggestionsBox" class="hidden bg-gray-700 p-2 rounded-lg text-sm space-y-2"></div>
+
+      <button onclick="addTask()" class="w-full bg-blue-500 hover:bg-blue-600 py-2 rounded-lg font-bold">
+        Add Task
+      </button>
+      <button onclick="showList()" class="w-full bg-green-500 hover:bg-green-600 py-2 rounded-lg font-bold">
+        View Tasks
+      </button>
+    </div>
+    
+    <div id="taskListScreen" class="hidden space-y-4">
+      <h1 class="text-xl font-bold text-center">Your Tasks</h1>
+      <ul id="taskList" class="space-y-3"></ul>
+
+      <h2 class="text-lg font-bold mt-4">✅ Completed</h2>
+      <ul id="completedList" class="space-y-3"></ul>
+
+      <button onclick="backToAdd()" class="w-full bg-purple-500 hover:bg-purple-600 py-2 rounded-lg font-bold mt-4">
+        Add More
+      </button>
+    </div>
+    
+  </div>
+
+  <script>
+    let tasks = [];
+    let completed = [];
+
+    // ===========================================
+    // EXTERNAL API ENDPOINTS (MUST BE HANDLED BY A RUNNING BACKEND PROXY)
+    // ===========================================
+    
+    // These relative URLs map to the endpoints defined in your server.js
+    const API_ANALYZE_ENDPOINT = '/api/analyze'; 
+    const API_SUGGEST_ENDPOINT = '/api/suggest'; 
+
+    // ===========================================
+    // AI SUGGESTION LOGIC
+    // ===========================================
+    
+    let suggestionTimeout;
+    function handleInput(text) {
+        clearTimeout(suggestionTimeout);
+        let trimmedText = text.trim();
+        
+        // Only fetch suggestions if user has typed something meaningful
+        if (trimmedText.length < 3) {
+            document.getElementById("suggestionsBox").classList.add("hidden");
+            return;
+        }
+        
+        // Debounce: Wait 500ms after typing stops before sending request
+        suggestionTimeout = setTimeout(() => {
+            fetchAISuggestions(trimmedText);
+        }, 500);
+    }
+
+    async function fetchAISuggestions(text) {
+        let box = document.getElementById("suggestionsBox");
+        box.innerHTML = '<div class="text-center text-gray-400">Loading AI suggestions...</div>';
+        box.classList.remove("hidden");
+
+        try {
+            const response = await fetch(API_SUGGEST_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ partial_task: text })
+            });
+
+            if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+
+            // Expects { "suggestions": ["Task 1", "Task 2", ...] } from the backend
+            const data = await response.json();
+            const suggestions = data.suggestions || []; 
+
+            box.innerHTML = ""; // Clear loading message
+            
+            if (suggestions.length > 0) {
+                suggestions.forEach(s => {
+                    let btn = document.createElement("button");
+                    btn.className = "block w-full text-left bg-gray-600 hover:bg-gray-500 p-2 rounded-lg";
+                    btn.textContent = s;
+                    btn.onclick = () => {
+                        document.getElementById("taskInput").value = s;
+                        box.classList.add("hidden");
+                    };
+                    box.appendChild(btn);
+                });
+                box.classList.remove("hidden");
+            } else {
+                 box.innerHTML = '<div class="text-center text-gray-400">No AI suggestions found.</div>';
+                 box.classList.remove("hidden");
+            }
+
+        } catch (error) {
+            console.error("Error fetching AI suggestions:", error);
+            box.innerHTML = '<div class="text-center text-red-400">Suggestion service unavailable.</div>';
+        }
+    }
+
+
+    // ===========================================
+    // AI TASK ANALYSIS LOGIC (Uses API for analysis and structuring)
+    // ===========================================
+
+    async function addTask() {
+      let input = document.getElementById("taskInput").value.trim();
+      if (!input) return alert("Please enter a task!");
+
+      // 1. Show loading state on button
+      const addButton = document.querySelector('button[onclick="addTask()"]');
+      const originalButtonText = addButton.textContent;
+      addButton.textContent = 'Analyzing...';
+      addButton.disabled = true;
+
+      try {
+          // 2. Call the AI Analysis Endpoint
+          const response = await fetch(API_ANALYZE_ENDPOINT, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ task_text: input })
+          });
+
+          if (!response.ok) {
+              throw new Error("AI analysis service failed to respond.");
+          }
+
+          // 3. The backend (powered by Gemini) returns the structured task object
+          let analyzed = await response.json();
+          
+          // Ensure default status is set
+          analyzed.status = analyzed.status || "Pending";
+          
+          tasks.push(analyzed);
+
+          document.getElementById("taskInput").value = "";
+          document.getElementById("suggestionsBox").classList.add("hidden");
+          alert("AI analyzed and added task: " + analyzed.text);
+          
+      } catch (error) {
+          console.error("Error adding task via AI:", error);
+          alert("Could not analyze task. Please check the backend connection.");
+      } finally {
+          // 4. Restore button state
+          addButton.textContent = originalButtonText;
+          addButton.disabled = false;
+      }
+    }
+    
+    // ===========================================
+    // EXISTING TASK MANAGEMENT LOGIC
+    // ===========================================
+
+    function showList() {
+      let list = document.getElementById("taskList");
+      let completedList = document.getElementById("completedList");
+      list.innerHTML = "";
+      completedList.innerHTML = "";
+
+      // Urgent first
+      tasks.sort((a, b) => b.urgent - a.urgent);
+
+      // Pending Tasks
+      tasks.forEach((task, index) => {
+        let li = document.createElement("li");
+        li.className = "p-3 rounded-lg bg-gray-700 flex flex-col";
+        
+        // This display relies entirely on the structured data returned by the /api/analyze call
+        // The expected properties are: text, time, category, urgent, note, status
+        li.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="${task.urgent ? 'text-red-400 font-bold' : ''}">
+              ${task.text}
+            </span>
+            <button onclick="completeTask(${index})" class="text-green-400 hover:text-green-500">✔ Done</button>
+          </div>
+          <p class="text-sm text-gray-300">📅 ${task.time} | 🏷 ${task.category} | 📌 Status: ${task.status}</p>
+          <p class="text-xs text-gray-400 italic">${task.note}</p>
+        `;
+        list.appendChild(li);
+      });
+
+      // Completed Tasks
+      completed.forEach(task => {
+        let li = document.createElement("li");
+        li.className = "p-3 rounded-lg bg-gray-600 flex flex-col opacity-70";
+        
+        li.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span>${task.text}</span>
+            <span class="text-green-300 font-bold">✔ Completed</span>
+          </div>
+          <p class="text-sm text-gray-300">📅 ${task.time} | 🏷 ${task.category}</p>
+        `;
+        completedList.appendChild(li);
+      });
+
+      document.getElementById("addTaskScreen").classList.add("hidden");
+      document.getElementById("taskListScreen").classList.remove("hidden");
+    }
+
+    function backToAdd() {
+      document.getElementById("taskListScreen").classList.add("hidden");
+      document.getElementById("addTaskScreen").classList.remove("hidden");
+    }
+
+    function completeTask(index) {
+      tasks[index].status = "Done";
+      completed.push(tasks[index]);
+      tasks.splice(index, 1);
+      showList();
+    }
+  </script>
+</body>
+</html>
