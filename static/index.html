@@ -55,6 +55,8 @@
     }
     requestNotificationPermission(); 
 
+    loadTasks(); 
+
     // ===========================================
     // EXTERNAL API ENDPOINTS
     // ** IMPORTANT: REPLACE 'http://localhost:3000' with your Render domain! **
@@ -250,6 +252,7 @@
           analyzed.status = analyzed.status || "Pending";
           tasks.push(analyzed);
           scheduleReminder(analyzed);
+          saveTasks(); 
       }
 
       document.getElementById("taskInput").value = "";
@@ -387,11 +390,13 @@
       tasks[index].status = "Done";
       completed.push(tasks[index]);
       tasks.splice(index, 1);
+      saveTasks(); 
       showList();
     }
   </script>
 </body>
 
 </html>
+
 
 
