@@ -4,6 +4,7 @@ import os
 import json
 from datetime import datetime
 from flask import Flask, request, jsonify
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_cors import CORS
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError
@@ -41,6 +42,7 @@ class SuggestionList(BaseModel):
 
 # --- INITIALIZE FLASK AND GEMINI ---
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1)
 CORS(app) 
 
 llm = ChatGoogleGenerativeAI(
@@ -135,3 +137,4 @@ def suggest_handler():
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
