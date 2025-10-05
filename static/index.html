@@ -3,8 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI To-Do List Agent </title>
+  <title>AI To-Do List Agent (Production Ready)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Ensure the modal overlay covers the screen */
+    .modal-overlay {
+        z-index: 100;
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+    /* Style for the date input to ensure the text is visible */
+    input[type="date"] {
+        color-scheme: dark; /* Helps keep the calendar visible in dark mode */
+        background-color: #334155; /* slate-700 */
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+    }
+  </style>
 </head>
 <body class="bg-slate-900 flex items-center justify-center min-h-screen text-slate-100">
   <div class="w-full max-w-md bg-slate-800 p-8 rounded-xl shadow-2xl shadow-slate-950/70">
@@ -41,26 +55,84 @@
     </div>
     
   </div>
+  
+  <div id="editModal" class="fixed inset-0 modal-overlay hidden flex items-center justify-center">
+    <div class="bg-slate-700 p-6 rounded-lg shadow-2xl w-full max-w-sm transform transition-all duration-300">
+      <h2 class="text-xl font-bold mb-4 text-indigo-300">Edit Task</h2>
+      <input type="hidden" id="editTaskIndex">
 
+      <div class="space-y-4">
+        <div>
+          <label for="editText" class="block text-sm font-medium text-slate-300 mb-1">Task Description</label>
+          <input type="text" id="editText" 
+                 class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 focus:ring-indigo-500 focus:border-indigo-500 text-slate-50">
+        </div>
+
+        <div>
+          <label for="editDate" class="block text-sm font-medium text-slate-300 mb-1">Due Date</label>
+          <input type="date" id="editDate" 
+                 class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 focus:ring-indigo-500 focus:border-indigo-500 text-slate-50">
+          <p class="text-xs text-slate-400 mt-1">Leave blank to use the AI's complex time/date phrase.</p>
+        </div>
+
+        <div>
+          <label for="editEffort" class="block text-sm font-medium text-slate-300 mb-1">Effort Score</label>
+          <select id="editEffort" 
+                  class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 text-slate-50">
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+            <option value="Unspecified">Unspecified</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-3 mt-6">
+        <button onclick="closeEditModal()" class="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-600 rounded-full hover:bg-slate-500 transition duration-150">Cancel</button>
+        <button onclick="saveEdit()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition duration-150">Save Changes</button>
+      </div>
+    </div>
+  </div>
   <script>
     let tasks = [];
     let completed = [];
 
-    // --- INITIAL SETUP: Request Notification Permission ---
-    function requestNotificationPermission() {
-        if (!("Notification" in window)) return;
-        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-            Notification.requestPermission();
-        }
+    // ===========================================
+    // STORAGE HELPER FUNCTIONS
+    // ===========================================
+    function loadTasks() {
+        const storedTasks = localStorage.getItem('ai_tasks');
+        const storedCompleted = localStorage.getItem('ai_completed');
+        
+        if (storedTasks) tasks = JSON.parse(storedTasks);
+        if (storedCompleted) completed = JSON.parse(storedCompleted);
     }
-    requestNotificationPermission(); 
 
-    loadTasks(); 
+    function saveTasks() {
+        localStorage.setItem('ai_tasks', JSON.stringify(tasks));
+        localStorage.setItem('ai_completed', JSON.stringify(completed));
+    }
+
+    // --- INITIAL SETUP ---
+    requestNotificationPermission(); 
+    loadTasks(); // Load data on startup
+
+
+    // ===========================================
+    // UTILITY FUNCTIONS FOR DATE HANDLING
+    // ===========================================
+    
+    // Converts a YYYY-MM-DD string to a readable date (safe for calendar input)
+    function formatDateToInput(timeStr) {
+        if (timeStr && timeStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+            return timeStr.substring(0, 10); // Return only YYYY-MM-DD
+        }
+        return ''; // Return empty string for calendar input if date is complex or unspecified
+    }
 
     // ===========================================
     // EXTERNAL API ENDPOINTS
-    // ** IMPORTANT: REPLACE 'http://localhost:3000' with your Render domain! **
-    // Example: const API_BASE_URL = 'https://ai-todo-backend.onrender.com';
     // ===========================================
     const API_BASE_URL = 'https://gemini-todo-list-agent.onrender.com'; 
     const API_ANALYZE_ENDPOINT = API_BASE_URL + '/api/analyze'; 
@@ -68,12 +140,17 @@
 
 
     // ===========================================
-    // REAL-TIME PROACTIVE REMINDERS LOGIC
+    // PROACTIVE REMINDERS LOGIC (Function not changing)
     // ===========================================
+    function requestNotificationPermission() {
+        if (!("Notification" in window)) return;
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+    }
     
     function scheduleReminder(task) {
         let targetTimeStr = task.time.match(/(\d{4}-\d{2}-\d{2})/) ? task.time : task.time + ' 09:00';
-        
         let targetDate = new Date(targetTimeStr);
 
         if (isNaN(targetDate.getTime()) || task.time.toLowerCase().includes('unspecified')) {
@@ -85,8 +162,6 @@
         let delay = targetDate.getTime() - now.getTime();
 
         if (delay > 0 && delay < 2073600000) { 
-            console.log(`Scheduling reminder for task: "${task.text}" in ${Math.round(delay / 60000)} minutes.`);
-            
             setTimeout(() => {
                 if (Notification.permission === "granted") {
                     new Notification("⏳ TASK DUE SOON!", {
@@ -103,18 +178,6 @@
         }
     }
 
-    function loadTasks() {
-         const storedTasks = localStorage.getItem('ai_tasks');
-         const storedCompleted = localStorage.getItem('ai_completed');
-    
-        if (storedTasks) tasks = JSON.parse(storedTasks);
-        if (storedCompleted) completed = JSON.parse(storedCompleted);
-    }
-
-    function saveTasks() {
-        localStorage.setItem('ai_tasks', JSON.stringify(tasks));
-        localStorage.setItem('ai_completed', JSON.stringify(completed));
-    }
 
     // ===========================================
     // LOCAL FALLBACK LOGIC (Used if Flask server is down)
@@ -146,7 +209,7 @@
 
 
     // ===========================================
-    // AI SUGGESTION LOGIC 
+    // AI SUGGESTION LOGIC (Function not changing)
     // ===========================================
     
     let suggestionTimeout;
@@ -224,7 +287,6 @@
       let analyzed = null;
 
       try {
-          // --- PRIMARY: Attempt to use the Python/Flask Backend ---
           const response = await fetch(API_ANALYZE_ENDPOINT, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -232,40 +294,91 @@
           });
 
           if (!response.ok) {
-              throw new Error("AI analysis service failed to respond correctly.");
+              throw new Error("AI analysis service failed to respond correctly or server is down.");
           }
 
           const data = await response.json();
-          analyzed = data; // Use the rich AI-generated data
+          analyzed = data;
           
           alert("AI analyzed and added task: " + analyzed.text);
 
       } catch (error) {
-          // --- SECONDARY: FALLBACK TO LOCAL ANALYSIS ---
           console.error("Backend connection or API call failed. Falling back to local analysis.", error);
-          analyzed = analyzeTaskFallback(input); // Use the simple local function
+          analyzed = analyzeTaskFallback(input);
           alert("WARNING: AI Service Offline. Task added with simplified local analysis: " + analyzed.text);
       } 
       
-      // --- FINAL PROCESSING (Regardless of success or failure) ---
       if (analyzed) {
           analyzed.status = analyzed.status || "Pending";
           tasks.push(analyzed);
           scheduleReminder(analyzed);
-          saveTasks(); 
+          saveTasks(); // Save data after adding
       }
 
       document.getElementById("taskInput").value = "";
       document.getElementById("suggestionsBox").classList.add("hidden");
 
-      // 4. Restore button state
       addButton.textContent = originalButtonText;
       addButton.disabled = false;
-      
     }
     
     // ===========================================
-    // TASK MANAGEMENT LOGIC (Includes Overdue Check, Scoring, & Layout)
+    // TASK EDITING LOGIC (NEW FUNCTIONS)
+    // ===========================================
+
+    function openEditModal(index) {
+        const task = tasks[index];
+
+        document.getElementById('editTaskIndex').value = index;
+        document.getElementById('editText').value = task.text;
+        
+        // Use utility function to safely format date for <input type="date">
+        document.getElementById('editDate').value = formatDateToInput(task.time);
+        
+        // Set the correct option in the Effort dropdown
+        document.getElementById('editEffort').value = task.effort_score || 'Unspecified';
+
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+
+    function saveEdit() {
+        const index = document.getElementById('editTaskIndex').value;
+        const task = tasks[index];
+        
+        const newText = document.getElementById('editText').value.trim();
+        const newDate = document.getElementById('editDate').value; // YYYY-MM-DD or ""
+        const newEffort = document.getElementById('editEffort').value;
+        
+        // 1. Update text and effort score directly
+        task.text = newText;
+        task.effort_score = newEffort === 'Unspecified' ? 'Low' : newEffort;
+        
+        // 2. Update time: If the date input is used, prioritize it; otherwise, keep the original complex time string.
+        if (newDate) {
+            // Note: If the AI had complex time (e.g., '2025-10-06 14:00'), this overwrites it to the simpler date.
+            task.time = newDate; 
+        } else if (newDate === '' && task.time.match(/^\d{4}-\d{2}-\d{2}/)) {
+            // If the user cleared the date picker but the task had a fixed date, set it to unspecified
+            task.time = 'unspecified';
+        }
+
+
+        // 3. Update urgency based on new effort score
+        task.urgent = (task.effort_score === 'High' || task.effort_score === 'Critical');
+
+        // 4. Close, Save, and Refresh
+        closeEditModal();
+        saveTasks();
+        showList();
+    }
+
+
+    // ===========================================
+    // TASK MANAGEMENT LOGIC (SHOW LIST & OVERDUE CHECK)
     // ===========================================
 
     function showList() {
@@ -274,7 +387,6 @@
         list.innerHTML = "";
         completedList.innerHTML = "";
 
-        // Helper function to get today's date as a comparable string (YYYY-MM-DD)
         const getTodayString = () => {
             const d = new Date();
             const year = d.getFullYear();
@@ -284,10 +396,8 @@
         };
         const today = getTodayString();
         
-        // Sorts tasks by urgency (urgent=true comes first)
         tasks.sort((a, b) => b.urgent - a.urgent);
 
-        // --- Helper for Effort Score Colors ---
         const getEffortColor = (score) => {
             switch (score) {
                 case 'Critical': return 'bg-red-700';
@@ -302,12 +412,11 @@
         tasks.forEach((task, index) => {
             let li = document.createElement("li");
             
-            // --- OVERDUE LOGIC & TAGGING ---
             let statusTag = '📌 Pending'; 
             let timeClass = '';
             let isOverdue = false;
 
-            // FIX: Use a flexible match to check for YYYY-MM-DD at the start of the time string
+            // Check for Overdue status
             if (task.time && task.time.match(/^\d{4}-\d{2}-\d{2}/)) {
                 const taskDate = task.time.substring(0, 10);
                 if (taskDate < today) {
@@ -328,22 +437,20 @@
                  statusTag = '🕒 SCHEDULED';
             }
             
-            // Determine list item border color based on urgency or overdueness
             let urgencyBorder = task.urgent || isOverdue ? 'border-l-4 border-red-500' : 'border-l-4 border-slate-500';
 
-            // Apply professional styling
             li.className = `p-4 rounded-md bg-slate-700/50 flex flex-col ${urgencyBorder}`;
             
             li.innerHTML = `
               <div class="flex justify-between items-center mb-1">
-                <span class="${task.urgent || isOverdue ? 'text-red-400 font-extrabold tracking-tight' : 'font-semibold'}">
+                <span onclick="openEditModal(${index})" class="cursor-pointer ${task.urgent || isOverdue ? 'text-red-400 font-extrabold tracking-tight' : 'font-semibold'} hover:text-indigo-400 transition duration-150">
                   ${task.text}
                 </span>
                 <button onclick="completeTask(${index})" class="text-emerald-400 hover:text-emerald-500 font-bold ml-4 p-1 rounded transition duration-150">✔ Done</button>
               </div>
               
               <p class="text-xs text-slate-400 pt-1 flex items-center justify-between">
-                <span>
+                <span onclick="openEditModal(${index})" class="cursor-pointer hover:text-slate-300 transition duration-150">
                     <span class="${timeClass}">📅 ${task.time}</span> 
                     | 🏷 ${task.category}
                 </span>
@@ -362,7 +469,7 @@
             list.appendChild(li);
         });
 
-        // Completed Tasks
+        // Completed Tasks (Simplified display)
         completed.forEach(task => {
             let li = document.createElement("li");
             li.className = "p-4 rounded-md bg-slate-700/30 flex flex-col opacity-70 border-l-4 border-emerald-500";
@@ -395,8 +502,4 @@
     }
   </script>
 </body>
-
 </html>
-
-
-
