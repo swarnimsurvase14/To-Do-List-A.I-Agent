@@ -12,7 +12,7 @@ from typing import List, Optional
 # LangChain Imports for Structured Output
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain.output_parsers import JsonOutputParser
+from langchain_core.output_parsers import JsonOutputParser
 
 # Load environment variables for local testing (Netlify loads them automatically in production)
 load_dotenv() 
@@ -134,4 +134,5 @@ def suggest_handler():
 if __name__ == '__main__':
     # This only runs if you run 'python main.py' locally.
     # In production, gunicorn or the serverless wrapper executes the 'app'.
+
     app.run(debug=True)
