@@ -1,4 +1,4 @@
-# /netlify/functions/main.py
+# app.py (Final Code with Correct LangChain Structure)
 
 import os
 import json
@@ -7,32 +7,20 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError
-from typing import List, Optional
+from typing import List
 
-# LangChain Imports for Structured Output
+# --- FIXED IMPORTS ---
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.output_parsers import JsonOutputParser # <--- Corrected Path
+# --- END FIXED IMPORTS ---
 
-# Load environment variables for local testing (Netlify loads them automatically in production)
+# Load environment variables 
 load_dotenv() 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
-    # This is a security check.
-    raise ValueError("GEMINI_API_KEY environment variable not found. Please set it in Netlify or .env.")
-
-# --- INITIAL SETUP ---
-app = Flask(__name__)
-# Enable CORS for the frontend's domain (e.g., Netlify URL)
-CORS(app) 
-
-# Initialize the Gemini Model (using LangChain wrapper)
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=0.0,
-    google_api_key=GEMINI_API_KEY
-)
+    raise ValueError("GEMINI_API_KEY environment variable not set. Please set it in Render.")
 
 # --- Pydantic Schemas for Structured Output ---
 
@@ -51,13 +39,21 @@ class SuggestionList(BaseModel):
     suggestions: List[str] = Field(description="A list of 5 complete task suggestions.")
 
 
-# Helper to get today's date
+# --- INITIALIZE FLASK AND GEMINI ---
+app = Flask(__name__)
+CORS(app) 
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    temperature=0.0,
+    google_api_key=GEMINI_API_KEY
+)
+
 def get_today_string():
     return datetime.now().strftime("%Y-%m-%d")
 
-# --- HANDLERS FOR FRONTEND ROUTES ---
 
-# 1. /api/analyze route (Task Analysis)
+# --- ROUTE 1: /api/analyze (Task Analysis) ---
 @app.route("/api/analyze", methods=["POST"])
 def analyze_handler():
     try:
@@ -68,35 +64,38 @@ def analyze_handler():
         if not task_text:
             return jsonify({"error": "Missing task_text"}), 400
 
-        # LangChain Setup for Structured Analysis
+        # --- FIX: Define Parser and create the Prompt Chain ---
         parser = JsonOutputParser(pydantic_object=TaskAnalysis)
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", 
              f"You are a professional task analysis engine. The current date is {current_date_string}. "
-             f"Your sole purpose is to analyze the user's task and return ONLY a valid JSON object matching the schema. "
-             f"Strictly format any date found as YYYY-MM-DD. "
-             f"The response format must be:\n{parser.get_format_instructions()}"
+             "Your sole purpose is to return ONLY a valid JSON object. "
+             "Strictly format any date found as YYYY-MM-DD. \n"
+             "{format_instructions}" # This placeholder will be injected by the parser
             ),
-            ("user", task_text),
+            ("user", "{user_input}"), # Use a clean input variable
         ])
+        
+        # Inject the formatting instructions into the prompt template
+        prompt = prompt.partial(format_instructions=parser.get_format_instructions())
         
         chain = prompt | llm | parser
         
-        # Invoke the LLM
-        result = chain.invoke({})
+        # Invoke the LLM, supplying the variable the prompt expects
+        result = chain.invoke({"user_input": task_text})
 
         return jsonify(result)
 
     except ValidationError as e:
         print(f"Validation Error: {e}")
-        return jsonify({"error": "AI returned invalid structure.", "details": str(e)}), 500
+        return jsonify({"error": "AI returned invalid JSON structure.", "details": str(e)}), 500
     except Exception as e:
         print(f"ERROR in analyze.py: {e}")
         return jsonify({"error": "Internal Server Error during AI analysis."}), 500
 
 
-# 2. /api/suggest route (Dynamic Suggestions)
+# --- ROUTE 2: /api/suggest (Dynamic Suggestions) ---
 @app.route("/api/suggest", methods=["POST"])
 def suggest_handler():
     try:
@@ -106,19 +105,25 @@ def suggest_handler():
         if not partial_task:
             return jsonify({"error": "Missing partial_task"}), 400
 
-        # LangChain Setup for Suggestions
+        # LangChain Setup for Suggestions Chain
         parser = JsonOutputParser(pydantic_object=SuggestionList)
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", 
              "You are a helpful AI completer. Generate 5 unique suggestions to complete the user's partial text. "
-             f"The response format must be:\n{parser.get_format_instructions()}"
+             f"The response format must be:\n"
+             "{format_instructions}" # This placeholder will be injected by the parser
             ),
-            ("user", partial_task),
+            ("user", "{user_input}"),
         ])
         
+        # Inject the formatting instructions into the prompt template
+        prompt = prompt.partial(format_instructions=parser.get_format_instructions())
+
         chain = prompt | llm | parser
-        result = chain.invoke({})
+        
+        # Invoke the LLM, supplying the variable the prompt expects
+        result = chain.invoke({"user_input": partial_task})
 
         return jsonify(result)
 
@@ -127,12 +132,6 @@ def suggest_handler():
         return jsonify({"error": "Internal Server Error during suggestion generation."}), 500
 
 
-# --- Deployment Entry Point (Gunicorn/Serverless) ---
-# When deploying to Netlify, Vercel, or Render, they use an adapter (like gunicorn)
-# that finds the 'app' variable (your Flask app) and runs it. 
-# This structure is sufficient for the deployment toolchain.
+# --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
-    # This only runs if you run 'python main.py' locally.
-    # In production, gunicorn or the serverless wrapper executes the 'app'.
-
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
