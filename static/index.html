@@ -101,6 +101,18 @@
         }
     }
 
+    function loadTasks() {
+         const storedTasks = localStorage.getItem('ai_tasks');
+         const storedCompleted = localStorage.getItem('ai_completed');
+    
+        if (storedTasks) tasks = JSON.parse(storedTasks);
+        if (storedCompleted) completed = JSON.parse(storedCompleted);
+    }
+
+    function saveTasks() {
+        localStorage.setItem('ai_tasks', JSON.stringify(tasks));
+        localStorage.setItem('ai_completed', JSON.stringify(completed));
+    }
 
     // ===========================================
     // LOCAL FALLBACK LOGIC (Used if Flask server is down)
@@ -381,4 +393,5 @@
 </body>
 
 </html>
+
 
