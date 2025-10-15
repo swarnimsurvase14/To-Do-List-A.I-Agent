@@ -6,32 +6,54 @@
   <title>AI To-Do List Agent (Production Ready)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Ensure the modal overlay covers the screen */
+    /* Ensures the date input color is manageable in both themes */
+    input[type="date"] {
+        color-scheme: dark; 
+        background-color: #334155; 
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+    }
+    /* Base Dark Mode Classes (Default) */
+    .dark-mode {
+        transition: background-color 0.3s, color 0.3s;
+    }
+    /* Light Mode Classes: Define the visual changes for the body and card */
+    .light-mode {
+        background-color: #f8fafc; /* slate-50 */
+        color: #1e293b; /* slate-900 */
+    }
+    .light-mode .card {
+        background-color: #ffffff; /* white */
+    }
+    /* Added styles for the modal overlay */
     .modal-overlay {
         z-index: 100;
         background-color: rgba(0, 0, 0, 0.8);
     }
-    /* Style for the date input to ensure the text is visible */
-    input[type="date"] {
-        color-scheme: dark; /* Helps keep the calendar visible in dark mode */
-        background-color: #334155; /* slate-700 */
-        border-radius: 0.5rem;
-        padding: 0.5rem;
-    }
   </style>
 </head>
-<body class="bg-slate-900 flex items-center justify-center min-h-screen text-slate-100">
-  <div class="w-full max-w-md bg-slate-800 p-8 rounded-xl shadow-2xl shadow-slate-950/70">
+<body class="bg-slate-900 flex items-center justify-center min-h-screen text-slate-100 dark-mode">
+  
+  <div class="w-full max-w-2xl bg-slate-800 p-8 rounded-xl shadow-2xl shadow-slate-950/70 card">
     
     <div id="addTaskScreen" class="space-y-5">
-      <h1 class="text-2xl font-extrabold text-center text-indigo-400 tracking-wide">To-do list AI Agent</h1>
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-extrabold text-indigo-400 tracking-wide">AI To-Do List Agent</h1>
+        <button onclick="toggleTheme()" id="themeToggle" class="p-2 rounded-full bg-slate-700/50 hover:bg-indigo-600/50 transition duration-150">
+          <span id="themeIcon">☀️</span>
+        </button>
+      </div>
       
       <textarea id="taskInput" rows="3" placeholder="e.g. Finish urgent homework tomorrow 5pm" 
         class="w-full p-4 rounded-lg bg-slate-700/70 text-slate-100 border border-slate-600 
                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
         oninput="handleInput(this.value)"></textarea>
       
-      <div id="suggestionsBox" class="hidden bg-slate-700 p-2 rounded-lg text-sm space-y-2 border border-indigo-600/50"></div>
+      <div id="suggestionsBoxContainer" class="max-h-48 h-auto relative overflow-visible mt-2"> 
+        <div id="suggestionsBox" class="bg-slate-700 p-2 rounded-lg text-sm space-y-2 border border-indigo-600/50 max-h-48 overflow-y-auto">
+           <div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>
+        </div>
+      </div>
 
       <button onclick="addTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-full font-bold shadow-md 
                shadow-indigo-500/30 transition duration-150 disabled:bg-gray-500 disabled:cursor-not-allowed">
@@ -43,7 +65,12 @@
     </div>
     
     <div id="taskListScreen" class="hidden space-y-5">
-      <h1 class="text-2xl font-extrabold text-center text-indigo-400 tracking-wide">Your Tasks</h1>
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-extrabold text-indigo-400 tracking-wide">Your Tasks</h1>
+        <button onclick="toggleTheme()" class="p-2 rounded-full bg-slate-700/50 hover:bg-indigo-600/50 transition duration-150">
+          <span id="themeIcon2">☀️</span>
+        </button>
+      </div>
       <ul id="taskList" class="space-y-4"></ul>
 
       <h2 class="text-lg font-extrabold pt-2 border-t border-slate-700">✅ Completed</h2>
@@ -60,25 +87,19 @@
     <div class="bg-slate-700 p-6 rounded-lg shadow-2xl w-full max-w-sm transform transition-all duration-300">
       <h2 class="text-xl font-bold mb-4 text-indigo-300">Edit Task</h2>
       <input type="hidden" id="editTaskIndex">
-
       <div class="space-y-4">
         <div>
           <label for="editText" class="block text-sm font-medium text-slate-300 mb-1">Task Description</label>
-          <input type="text" id="editText" 
-                 class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 focus:ring-indigo-500 focus:border-indigo-500 text-slate-50">
+          <input type="text" id="editText" class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 focus:ring-indigo-500 focus:border-indigo-500 text-slate-50">
         </div>
-
         <div>
           <label for="editDate" class="block text-sm font-medium text-slate-300 mb-1">Due Date</label>
-          <input type="date" id="editDate" 
-                 class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 focus:ring-indigo-500 focus:border-indigo-500 text-slate-50">
+          <input type="date" id="editDate" class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 focus:ring-indigo-500 focus:border-indigo-500 text-slate-50">
           <p class="text-xs text-slate-400 mt-1">Leave blank to use the AI's complex time/date phrase.</p>
         </div>
-
         <div>
           <label for="editEffort" class="block text-sm font-medium text-slate-300 mb-1">Effort Score</label>
-          <select id="editEffort" 
-                  class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 text-slate-50">
+          <select id="editEffort" class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 text-slate-50">
             <option value="Critical">Critical</option>
             <option value="High">High</option>
             <option value="Medium">Medium</option>
@@ -87,7 +108,6 @@
           </select>
         </div>
       </div>
-
       <div class="flex justify-end space-x-3 mt-6">
         <button onclick="closeEditModal()" class="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-600 rounded-full hover:bg-slate-500 transition duration-150">Cancel</button>
         <button onclick="saveEdit()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition duration-150">Save Changes</button>
@@ -113,24 +133,78 @@
         localStorage.setItem('ai_tasks', JSON.stringify(tasks));
         localStorage.setItem('ai_completed', JSON.stringify(completed));
     }
-
-    // --- INITIAL SETUP ---
-    requestNotificationPermission(); 
-    loadTasks(); // Load data on startup
-
-
-    // ===========================================
-    // UTILITY FUNCTIONS FOR DATE HANDLING
-    // ===========================================
     
-    // Converts a YYYY-MM-DD string to a readable date (safe for calendar input)
-    function formatDateToInput(timeStr) {
-        if (timeStr && timeStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-            return timeStr.substring(0, 10); // Return only YYYY-MM-DD
+    // ===========================================
+    // THEME LOGIC
+    // ===========================================
+    const mainCard = document.querySelector('.card');
+
+    function applyTheme(isDark) {
+        const body = document.body;
+        const icon1 = document.getElementById('themeIcon');
+        const icon2 = document.getElementById('themeIcon2');
+        const input = document.getElementById('taskInput');
+        const modalInputs = document.querySelectorAll('#editModal input[type="text"], #editModal select, #editModal input[type="date"]');
+        const modalContainer = document.querySelector('#editModal > div');
+
+
+        // --- Core Body and Card Class Swapping ---
+        if (isDark) {
+            body.classList.replace('light-mode', 'dark-mode');
+            mainCard.classList.replace('bg-white', 'bg-slate-800');
+            body.classList.remove('text-gray-800', 'bg-slate-50');
+            body.classList.add('text-slate-100', 'bg-slate-900');
+
+            // Apply Dark Mode input colors
+            input.classList.add('bg-slate-700/70', 'text-slate-100', 'border-slate-600');
+            input.classList.remove('bg-gray-200', 'text-gray-800', 'border-gray-400');
+            modalContainer.classList.replace('bg-white', 'bg-slate-700');
+            
+            icon1.innerHTML = '☀️';
+            if (icon2) icon2.innerHTML = '☀️';
+        } else {
+            // Apply Light Mode
+            body.classList.replace('dark-mode', 'light-mode');
+            mainCard.classList.replace('bg-slate-800', 'bg-white');
+            body.classList.remove('text-slate-100', 'bg-slate-900');
+            body.classList.add('text-gray-800', 'bg-slate-50');
+
+            // Apply Light Mode input colors
+            input.classList.remove('bg-slate-700/70', 'text-slate-100', 'border-slate-600');
+            input.classList.add('bg-gray-200', 'text-gray-800', 'border-gray-400');
+            modalContainer.classList.replace('bg-slate-700', 'bg-white');
+
+
+            icon1.innerHTML = '🌙';
+            if (icon2) icon2.innerHTML = '🌙';
         }
-        return ''; // Return empty string for calendar input if date is complex or unspecified
+        
+        // Update all modal inputs (text, select, date)
+        modalInputs.forEach(el => {
+             if (isDark) {
+                el.classList.add('bg-slate-600', 'text-slate-50');
+                el.classList.remove('bg-white', 'text-gray-800');
+            } else {
+                el.classList.remove('bg-slate-600', 'text-slate-50');
+                el.classList.add('bg-white', 'text-gray-800');
+            }
+        });
+
+
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
     }
 
+    function toggleTheme() {
+        const isCurrentlyDark = document.body.classList.contains('dark-mode');
+        applyTheme(!isCurrentlyDark); 
+    }
+
+    function loadInitialTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        const shouldBeDark = (savedTheme === 'dark' || savedTheme === null);
+        applyTheme(shouldBeDark); 
+    }
+    
     // ===========================================
     // EXTERNAL API ENDPOINTS
     // ===========================================
@@ -139,9 +213,23 @@
     const API_SUGGEST_ENDPOINT = API_BASE_URL + '/api/suggest'; 
 
 
+    // --- INITIAL SETUP AND DATA LOAD ---
+    requestNotificationPermission(); 
+    loadTasks();
+    loadInitialTheme(); // Load saved theme setting
+    
+    
     // ===========================================
-    // PROACTIVE REMINDERS LOGIC (Function not changing)
+    // UTILITY FUNCTIONS & REMINDERS
     // ===========================================
+    
+    function formatDateToInput(timeStr) {
+        if (timeStr && timeStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+            return timeStr.substring(0, 10);
+        }
+        return '';
+    }
+
     function requestNotificationPermission() {
         if (!("Notification" in window)) return;
         if (Notification.permission !== "granted" && Notification.permission !== "denied") {
@@ -151,10 +239,10 @@
     
     function scheduleReminder(task) {
         let targetTimeStr = task.time.match(/(\d{4}-\d{2}-\d{2})/) ? task.time : task.time + ' 09:00';
+        
         let targetDate = new Date(targetTimeStr);
 
         if (isNaN(targetDate.getTime()) || task.time.toLowerCase().includes('unspecified')) {
-            console.log(`Reminder skipped for task: ${task.text} (Time ambiguous)`);
             return; 
         }
 
@@ -169,18 +257,14 @@
                         icon: 'https://placehold.co/60x60/4f46e5/white?text=AI', 
                         tag: 'task-' + Date.now() 
                     });
-                } else {
-                    console.warn("Reminder time reached, but notification permission was denied.");
                 }
             }, delay);
-        } else if (delay <= 0) {
-            console.log(`Task "${task.text}" is already overdue or due now.`);
         }
     }
 
 
     // ===========================================
-    // LOCAL FALLBACK LOGIC (Used if Flask server is down)
+    // LOCAL FALLBACK LOGIC
     // ===========================================
     function analyzeTaskFallback(text) {
         let task = { 
@@ -209,26 +293,29 @@
 
 
     // ===========================================
-    // AI SUGGESTION LOGIC (Function not changing)
+    // AI SUGGESTION LOGIC
     // ===========================================
     
-    let suggestionTimeout;
     function handleInput(text) {
         clearTimeout(suggestionTimeout);
         let trimmedText = text.trim();
-        
+        let box = document.getElementById("suggestionsBox");
+
         if (trimmedText.length < 3) {
-            document.getElementById("suggestionsBox").classList.add("hidden");
+            box.innerHTML = '<div class="text-center text-slate-400 p-2">Type more to see suggestions...</div>';
+            box.classList.remove("hidden"); // Ensure the box remains visible but content changes
             return;
         }
         
+        // Debounce logic
         suggestionTimeout = setTimeout(() => {
             fetchAISuggestions(trimmedText);
-        }, 500);
+        }, 500); 
     }
 
     async function fetchAISuggestions(text) {
         let box = document.getElementById("suggestionsBox");
+        
         box.innerHTML = '<div class="text-center text-indigo-400 animate-pulse">Loading AI suggestions...</div>';
         box.classList.remove("hidden");
 
@@ -251,21 +338,22 @@
             if (suggestions.length > 0) {
                 suggestions.forEach(s => {
                     let btn = document.createElement("button");
+                    // Ensure full width and styling for list appearance
                     btn.className = "block w-full text-left bg-slate-700 hover:bg-indigo-600/50 p-2 rounded-md transition duration-150";
                     btn.textContent = s;
                     btn.onclick = () => {
                         document.getElementById("taskInput").value = s;
-                        box.classList.add("hidden");
+                        box.classList.add("hidden"); // Optional: Hide box after selection
                     };
                     box.appendChild(btn);
                 });
-                box.classList.remove("hidden");
             } else {
                  box.innerHTML = '<div class="text-center text-slate-400">No AI suggestions found.</div>';
             }
 
         } catch (error) {
-            box.classList.add("hidden");
+            // Display connection error within the box
+            box.innerHTML = '<div class="text-center text-red-400">Could not connect to suggestion service.</div>';
             console.warn("Suggestion fetch failed. API likely unreachable.");
         }
     }
@@ -312,7 +400,7 @@
           analyzed.status = analyzed.status || "Pending";
           tasks.push(analyzed);
           scheduleReminder(analyzed);
-          saveTasks(); // Save data after adding
+          saveTasks();
       }
 
       document.getElementById("taskInput").value = "";
@@ -323,7 +411,7 @@
     }
     
     // ===========================================
-    // TASK EDITING LOGIC (NEW FUNCTIONS)
+    // TASK EDITING LOGIC (UPDATE & SAVE)
     // ===========================================
 
     function openEditModal(index) {
@@ -332,10 +420,8 @@
         document.getElementById('editTaskIndex').value = index;
         document.getElementById('editText').value = task.text;
         
-        // Use utility function to safely format date for <input type="date">
         document.getElementById('editDate').value = formatDateToInput(task.time);
         
-        // Set the correct option in the Effort dropdown
         document.getElementById('editEffort').value = task.effort_score || 'Unspecified';
 
         document.getElementById('editModal').classList.remove('hidden');
@@ -350,27 +436,20 @@
         const task = tasks[index];
         
         const newText = document.getElementById('editText').value.trim();
-        const newDate = document.getElementById('editDate').value; // YYYY-MM-DD or ""
+        const newDate = document.getElementById('editDate').value; 
         const newEffort = document.getElementById('editEffort').value;
         
-        // 1. Update text and effort score directly
         task.text = newText;
         task.effort_score = newEffort === 'Unspecified' ? 'Low' : newEffort;
         
-        // 2. Update time: If the date input is used, prioritize it; otherwise, keep the original complex time string.
         if (newDate) {
-            // Note: If the AI had complex time (e.g., '2025-10-06 14:00'), this overwrites it to the simpler date.
             task.time = newDate; 
         } else if (newDate === '' && task.time.match(/^\d{4}-\d{2}-\d{2}/)) {
-            // If the user cleared the date picker but the task had a fixed date, set it to unspecified
             task.time = 'unspecified';
         }
 
-
-        // 3. Update urgency based on new effort score
         task.urgent = (task.effort_score === 'High' || task.effort_score === 'Critical');
 
-        // 4. Close, Save, and Refresh
         closeEditModal();
         saveTasks();
         showList();
@@ -416,7 +495,6 @@
             let timeClass = '';
             let isOverdue = false;
 
-            // Check for Overdue status
             if (task.time && task.time.match(/^\d{4}-\d{2}-\d{2}/)) {
                 const taskDate = task.time.substring(0, 10);
                 if (taskDate < today) {
@@ -428,7 +506,6 @@
                 }
             }
             
-            // Determine primary status tag
             if (task.urgent) {
                 statusTag = '🚨 URGENT';
             } else if (isOverdue) {
@@ -439,11 +516,14 @@
             
             let urgencyBorder = task.urgent || isOverdue ? 'border-l-4 border-red-500' : 'border-l-4 border-slate-500';
 
+            // Use dynamic text color based on theme
+            const textColor = document.body.classList.contains('light-mode') ? 'text-gray-800' : 'text-slate-100';
+
             li.className = `p-4 rounded-md bg-slate-700/50 flex flex-col ${urgencyBorder}`;
             
             li.innerHTML = `
               <div class="flex justify-between items-center mb-1">
-                <span onclick="openEditModal(${index})" class="cursor-pointer ${task.urgent || isOverdue ? 'text-red-400 font-extrabold tracking-tight' : 'font-semibold'} hover:text-indigo-400 transition duration-150">
+                <span onclick="openEditModal(${index})" class="cursor-pointer ${textColor} ${task.urgent || isOverdue ? 'text-red-600 font-extrabold tracking-tight' : 'font-semibold'} hover:text-indigo-600 transition duration-150">
                   ${task.text}
                 </span>
                 <button onclick="completeTask(${index})" class="text-emerald-400 hover:text-emerald-500 font-bold ml-4 p-1 rounded transition duration-150">✔ Done</button>
@@ -469,7 +549,7 @@
             list.appendChild(li);
         });
 
-        // Completed Tasks (Simplified display)
+        // Completed Tasks
         completed.forEach(task => {
             let li = document.createElement("li");
             li.className = "p-4 rounded-md bg-slate-700/30 flex flex-col opacity-70 border-l-4 border-emerald-500";
@@ -497,10 +577,9 @@
       tasks[index].status = "Done";
       completed.push(tasks[index]);
       tasks.splice(index, 1);
-      saveTasks(); 
+      saveTasks();
       showList();
     }
   </script>
 </body>
 </html>
-
