@@ -30,6 +30,11 @@
         z-index: 100;
         background-color: rgba(0, 0, 0, 0.8);
     }
+    /* CRITICAL FIX: Ensure task input and suggestion box use consistent styling */
+    .suggestion-box-style {
+        border: 1px solid rgb(71 85 105); /* slate-600 */
+        background-color: rgba(51, 65, 85, 0.7); /* slate-700/70 */
+    }
   </style>
 </head>
 <body class="bg-slate-900 flex items-center justify-center min-h-screen text-slate-100 dark-mode">
@@ -38,21 +43,20 @@
     
     <div id="addTaskScreen" class="space-y-5">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-extrabold text-indigo-400 tracking-wide">AI To-Do List Agent</h1>
+        <h1 class="text-2xl font-extrabold text-indigo-400 tracking-wide">AI Project Manager</h1>
         <button onclick="toggleTheme()" id="themeToggle" class="p-2 rounded-full bg-slate-700/50 hover:bg-indigo-600/50 transition duration-150">
           <span id="themeIcon">☀️</span>
         </button>
       </div>
       
       <textarea id="taskInput" rows="3" placeholder="e.g. Finish urgent homework tomorrow 5pm" 
-        class="w-full p-4 rounded-lg bg-slate-700/70 text-slate-100 border border-slate-600 
+        class="w-full p-4 rounded-lg suggestion-box-style text-slate-100 
                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
         oninput="handleInput(this.value)"></textarea>
       
       <div id="suggestionsBoxContainer" class="max-h-48 h-auto mt-2"> 
-        <div id="suggestionsBox" class="bg-slate-700 p-2 rounded-lg text-sm space-y-2 border border-indigo-600/50 max-h-48 overflow-y-auto">
-           <div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>
-        </div>
+        <div id="suggestionsBox" class="suggestion-box-style p-2 rounded-lg text-sm space-y-2 border border-indigo-600/50 max-h-48 overflow-y-auto">
+           </div>
       </div>
 
       <button onclick="addTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-full font-bold shadow-md 
@@ -298,7 +302,7 @@
     // ===========================================
     
     function handleInput(text) {
-        clearTimeout(suggestionTimeout); // FIX: Clears the timer safely
+        clearTimeout(suggestionTimeout);
         let trimmedText = text.trim();
         let box = document.getElementById("suggestionsBox");
 
@@ -411,7 +415,7 @@
       }
 
       document.getElementById("taskInput").value = "";
-      // Clear suggestion box content after successful submission
+      // Clear suggestion content after successful submission
       document.getElementById("suggestionsBox").innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>'; 
 
       addButton.textContent = originalButtonText;
@@ -591,4 +595,3 @@
   </script>
 </body>
 </html>
-
