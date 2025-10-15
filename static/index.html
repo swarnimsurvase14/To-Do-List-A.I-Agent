@@ -54,9 +54,10 @@
                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
         oninput="handleInput(this.value)"></textarea>
       
-      <div id="suggestionsBoxContainer" class="max-h-48 h-auto mt-2"> 
-        <div id="suggestionsBox" class="suggestion-box-style p-2 rounded-lg text-sm space-y-2 border border-indigo-600/50 max-h-48 overflow-y-auto">
-           </div>
+      <div id="suggestionsBoxContainer" class="h-40 mt-2"> 
+        <div id="suggestionsBox" class="suggestion-box-style p-2 rounded-lg text-sm space-y-2 border border-indigo-600/50 h-full overflow-y-auto">
+           <div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>
+        </div>
       </div>
 
       <button onclick="addTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-full font-bold shadow-md 
@@ -306,7 +307,7 @@
         let trimmedText = text.trim();
         let box = document.getElementById("suggestionsBox");
 
-        // Show default message if input is empty
+        // Show initial prompt if input is empty
         if (trimmedText.length === 0) {
             box.innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>';
             return;
@@ -415,7 +416,7 @@
       }
 
       document.getElementById("taskInput").value = "";
-      // Clear suggestion content after successful submission
+      // Clear suggestion box content after successful submission
       document.getElementById("suggestionsBox").innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>'; 
 
       addButton.textContent = originalButtonText;
