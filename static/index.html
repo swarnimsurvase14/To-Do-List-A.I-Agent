@@ -117,7 +117,7 @@
   <script>
     let tasks = [];
     let completed = [];
-    let suggestionTimeout = null; 
+    let suggestionTimeout = null; // FIX: Declaring the global variable
 
     // ===========================================
     // STORAGE HELPER FUNCTIONS
@@ -217,7 +217,7 @@
     // --- INITIAL SETUP AND DATA LOAD ---
     requestNotificationPermission(); 
     loadTasks();
-    loadInitialTheme(); 
+    loadInitialTheme(); // Load saved theme setting
     
     
     // ===========================================
@@ -302,14 +302,15 @@
         let trimmedText = text.trim();
         let box = document.getElementById("suggestionsBox");
 
-        // Show default/initial message if input is empty
+        // Show initial prompt if input is empty
         if (trimmedText.length === 0) {
             box.innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>';
             return;
         }
         
+        // Show guidance if input is too short
         if (trimmedText.length < 3) {
-            box.innerHTML = '<div class="text-center text-slate-400 p-2">Type more to see suggestions...</div>';
+            box.innerHTML = '<div class="text-center text-slate-400 p-2">Type at least 3 characters for suggestions...</div>';
             return;
         }
         
@@ -343,12 +344,13 @@
             if (suggestions.length > 0) {
                 suggestions.forEach(s => {
                     let btn = document.createElement("button");
+                    // Ensure full width and styling for list appearance
                     btn.className = "block w-full text-left bg-slate-700 hover:bg-indigo-600/50 p-2 rounded-md transition duration-150";
                     btn.textContent = s;
                     btn.onclick = () => {
                         document.getElementById("taskInput").value = s;
-                        // Keep the suggestion box content visible for potential subsequent selections
-                        // Alternatively, you could hide the box here: box.classList.add("hidden");
+                        // Clear suggestion box content after selection
+                        box.innerHTML = '<div class="text-center text-slate-400 p-2">Suggestion selected. Ready to add task.</div>';
                     };
                     box.appendChild(btn);
                 });
@@ -357,6 +359,7 @@
             }
 
         } catch (error) {
+            // Display connection error within the box
             box.innerHTML = '<div class="text-center text-red-400">Could not connect to suggestion service.</div>';
             console.warn("Suggestion fetch failed. API likely unreachable.");
         }
@@ -408,7 +411,7 @@
       }
 
       document.getElementById("taskInput").value = "";
-      // Clear suggestion content after successful submission
+      // Clear suggestion box content after successful submission
       document.getElementById("suggestionsBox").innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>'; 
 
       addButton.textContent = originalButtonText;
