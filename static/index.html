@@ -298,11 +298,11 @@
     // ===========================================
     
     function handleInput(text) {
-        clearTimeout(suggestionTimeout);
+        clearTimeout(suggestionTimeout); // FIX: Clears the timer safely
         let trimmedText = text.trim();
         let box = document.getElementById("suggestionsBox");
 
-        // Show initial prompt if input is empty
+        // Show default message if input is empty
         if (trimmedText.length === 0) {
             box.innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>';
             return;
