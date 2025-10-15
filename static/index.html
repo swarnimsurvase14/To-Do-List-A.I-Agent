@@ -38,7 +38,7 @@
     
     <div id="addTaskScreen" class="space-y-5">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-extrabold text-indigo-400 tracking-wide">AI To-Do List Agent</h1>
+        <h1 class="text-2xl font-extrabold text-indigo-400 tracking-wide">AI Project Manager</h1>
         <button onclick="toggleTheme()" id="themeToggle" class="p-2 rounded-full bg-slate-700/50 hover:bg-indigo-600/50 transition duration-150">
           <span id="themeIcon">☀️</span>
         </button>
@@ -117,6 +117,7 @@
   <script>
     let tasks = [];
     let completed = [];
+    let suggestionTimeout = null; // <--- FIX: Declaring the global variable
 
     // ===========================================
     // STORAGE HELPER FUNCTIONS
@@ -216,7 +217,7 @@
     // --- INITIAL SETUP AND DATA LOAD ---
     requestNotificationPermission(); 
     loadTasks();
-    loadInitialTheme(); // Load saved theme setting
+    loadInitialTheme(); 
     
     
     // ===========================================
@@ -296,21 +297,23 @@
     // AI SUGGESTION LOGIC
     // ===========================================
     
+    // This function now holds the debouncing logic
     function handleInput(text) {
-        clearTimeout(suggestionTimeout);
-        let trimmedText = text.trim();
         let box = document.getElementById("suggestionsBox");
+        clearTimeout(suggestionTimeout); // <--- FIX: Clears the timer safely
 
+        let trimmedText = text.trim();
+        
         if (trimmedText.length < 3) {
             box.innerHTML = '<div class="text-center text-slate-400 p-2">Type more to see suggestions...</div>';
-            box.classList.remove("hidden"); // Ensure the box remains visible but content changes
+            box.classList.remove("hidden");
             return;
         }
         
-        // Debounce logic
+        // Debounce logic: calls fetchAISuggestions after 500ms pause
         suggestionTimeout = setTimeout(() => {
             fetchAISuggestions(trimmedText);
-        }, 500); 
+        }, 500);
     }
 
     async function fetchAISuggestions(text) {
@@ -338,12 +341,12 @@
             if (suggestions.length > 0) {
                 suggestions.forEach(s => {
                     let btn = document.createElement("button");
-                    // Ensure full width and styling for list appearance
                     btn.className = "block w-full text-left bg-slate-700 hover:bg-indigo-600/50 p-2 rounded-md transition duration-150";
                     btn.textContent = s;
                     btn.onclick = () => {
                         document.getElementById("taskInput").value = s;
-                        box.classList.add("hidden"); // Optional: Hide box after selection
+                        // Keep box visible but clear content for a moment
+                        box.innerHTML = '';
                     };
                     box.appendChild(btn);
                 });
@@ -352,7 +355,6 @@
             }
 
         } catch (error) {
-            // Display connection error within the box
             box.innerHTML = '<div class="text-center text-red-400">Could not connect to suggestion service.</div>';
             console.warn("Suggestion fetch failed. API likely unreachable.");
         }
@@ -404,7 +406,11 @@
       }
 
       document.getElementById("taskInput").value = "";
-      document.getElementById("suggestionsBox").classList.add("hidden");
+      // Hide suggestion box after successful submission
+      document.getElementById("suggestionsBox").classList.add("hidden"); 
+      // Re-initialize suggestions box content to default state
+      document.getElementById("suggestionsBox").innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>';
+
 
       addButton.textContent = originalButtonText;
       addButton.disabled = false;
