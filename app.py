@@ -1,3 +1,4 @@
+import gc
 import os
 import json
 import base64 # Required for decoding the image
@@ -190,3 +191,4 @@ def capture_handler():
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
