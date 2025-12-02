@@ -44,6 +44,7 @@
         </button>
       </div>
       
+      <h2 class="text-xl font-extrabold text-indigo-400 mt-4 border-b border-slate-700 pb-1">1. Manual Text Input</h2>
       <textarea id="taskInput" rows="3" placeholder="e.g. Finish urgent homework tomorrow 5pm" 
         class="w-full p-4 rounded-lg bg-slate-700/70 text-slate-100 border border-slate-600 
                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
@@ -57,8 +58,17 @@
 
       <button onclick="addTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-full font-bold shadow-md 
                shadow-indigo-500/30 transition duration-150 disabled:bg-gray-500 disabled:cursor-not-allowed">
-        Add Task
+        Add Task (Analyze Text)
       </button>
+
+      <h2 class="text-xl font-extrabold text-indigo-400 mt-6 border-b border-slate-700 pb-1">2. Image Analysis</h2>
+      
+      <input type="file" id="imageInput" accept="image/jpeg, image/png" class="w-full p-3 rounded-lg bg-slate-700/50 text-slate-100 border border-slate-600">
+      
+      <button onclick="analyzeImage()" id="analyzeImageBtn" class="w-full bg-orange-600 hover:bg-orange-700 py-3 rounded-full font-bold shadow-md shadow-orange-500/30 transition duration-150 disabled:bg-gray-500 disabled:cursor-not-allowed">
+          Analyze Image for Tasks
+      </button>
+
       <button onclick="showList()" class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-full font-bold shadow-md transition duration-150">
         View Tasks
       </button>
@@ -117,7 +127,8 @@
   <script>
     let tasks = [];
     let completed = [];
-    let suggestionTimeout = null; // FIX: Declaring the global variable
+    let suggestionTimeout = null; 
+    let base64ImageString = null; // NEW: Variable to hold Base64 image data
 
     // ===========================================
     // STORAGE HELPER FUNCTIONS
@@ -212,12 +223,37 @@
     const API_BASE_URL = 'https://your-todolist-app.onrender.com'; 
     const API_ANALYZE_ENDPOINT = API_BASE_URL + '/api/analyze'; 
     const API_SUGGEST_ENDPOINT = API_BASE_URL + '/api/suggest'; 
+    // NEW ENDPOINT
+    const API_CAPTURE_ENDPOINT = API_BASE_URL + '/api/capture'; 
 
 
     // --- INITIAL SETUP AND DATA LOAD ---
     requestNotificationPermission(); 
     loadTasks();
     loadInitialTheme(); // Load saved theme setting
+
+    // --- NEW: Event listener to read the file immediately upon selection ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const fileInput = document.getElementById('imageInput');
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 7 * 1024 * 1024) { // 7 MB limit check
+                        return alert("Image file is too large. Max size is 7MB.");
+                    }
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        // Capture the full Data URL (data:image/jpeg;base64,...)
+                        base64ImageString = reader.result;
+                        document.getElementById('taskInput').placeholder = 'Image loaded and ready for analysis.';
+                    };
+                    // Read the file as a Data URL (includes the Base64 string)
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+    });
     
     
     // ===========================================
@@ -362,6 +398,60 @@
             // Display connection error within the box
             box.innerHTML = '<div class="text-center text-red-400">Could not connect to suggestion service.</div>';
             console.warn("Suggestion fetch failed. API likely unreachable.");
+        }
+    }
+
+
+    // ===========================================
+    // NEW: MULTIMODAL IMAGE ANALYSIS FUNCTION
+    // ===========================================
+    async function analyzeImage() {
+        if (!base64ImageString) {
+            return alert("Please select an image file first.");
+        }
+        
+        const analyzeBtn = document.getElementById('analyzeImageBtn');
+        const originalBtnText = analyzeBtn.textContent;
+        analyzeBtn.textContent = 'Analyzing Image...';
+        analyzeBtn.disabled = true;
+
+        try {
+            const response = await fetch(API_CAPTURE_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    image_data: base64ImageString,
+                    text_prompt: "Extract all tasks, deadlines, and categories from this image and return the results as a list of TaskAnalysis objects." 
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Multimodal analysis service failed. Check server logs.");
+            }
+
+            const data = await response.json();
+            
+            // Integrate Extracted Tasks (assumes backend returns data.extracted_tasks)
+            if (data.extracted_tasks && data.extracted_tasks.length > 0) {
+                data.extracted_tasks.forEach(task => {
+                    tasks.push(task);
+                    scheduleReminder(task);
+                });
+                saveTasks();
+                alert(`${data.extracted_tasks.length} tasks successfully extracted and added!`);
+                
+            } else {
+                alert("Analysis complete, but no tasks were extracted from the image.");
+            }
+
+        } catch (error) {
+            console.error("Multimodal API Error:", error);
+            alert("ERROR: Failed to analyze image. Check server logs and network.");
+        } finally {
+            analyzeBtn.textContent = originalBtnText;
+            analyzeBtn.disabled = false;
+            base64ImageString = null;
+            document.getElementById('imageInput').value = '';
         }
     }
 
