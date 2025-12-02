@@ -1,7 +1,6 @@
-# app.py (Final Code for Render Deployment)
-
 import os
 import json
+import base64
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -9,19 +8,20 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError
 from typing import List
 
-# --- FIXED IMPORTS for LangChain Core ---
+# --- Core AI and Flask Dependencies ---
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser 
 from werkzeug.middleware.proxy_fix import ProxyFix
-# --- END FIXED IMPORTS ---
+from google import genai
+from google.genai import types
+# --- END Dependencies ---
 
-# Load environment variables (for local testing; Render loads securely)
+# Load environment variables (Render loads securely from dashboard)
 load_dotenv() 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
-    # This check ensures the app doesn't run without a key
     raise ValueError("GEMINI_API_KEY environment variable not set. Please set it in Render.")
 
 # --- Pydantic Schemas for Structured Output ---
@@ -34,20 +34,27 @@ class TaskAnalysis(BaseModel):
     urgent: bool = Field(description="True if the task is marked urgent or uses words like ASAP.")
     note: str = Field(description="A helpful, concise note or warning for the user.")
     effort_score: str = Field(description="Assigned score: Low, Medium, High, or Critical.", 
-                              enum=["Low", "Medium", "High", "Critical"])
+                              enum=["Low", "Medium", "High", "Critical", "Unspecified"])
 
 class SuggestionList(BaseModel):
-    """Schema for structured output of suggested tasks."""
+    """Schema for returning suggestions."""
     suggestions: List[str] = Field(description="A list of 5 complete task suggestions.")
+
+# NEW: Schema to handle the list of tasks extracted from the image
+class ExtractedTasks(BaseModel):
+    """Schema for returning multiple structured tasks extracted from an image."""
+    extracted_tasks: List[TaskAnalysis] = Field(description="A list of structured tasks extracted from the image.")
 
 
 # --- INITIALIZE FLASK AND GEMINI ---
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static') # Tell Flask to look in the 'static' folder for assets.
 
 # VITAL FIX: Apply ProxyFix to resolve Render 404 routing issues
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1) 
 
 CORS(app) 
+
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
@@ -59,15 +66,14 @@ def get_today_string():
     return datetime.now().strftime("%Y-%m-%d")
 
 
-# --- ROUTE 1: Serves the Frontend HTML (Necessary for a combined deployment) ---
-# NOTE: This assumes you have moved your index.html into a folder named /static
+# --- ROUTE 1: Serves the Frontend HTML ---
 @app.route("/", defaults={"path": "index.html"})
 @app.route("/<path:path>")
 def serve_frontend(path):
-    return send_from_directory('static', path)
+    return send_from_directory(app.static_folder, path)
 
 
-# --- ROUTE 2: /api/analyze (Task Analysis) ---
+# --- ROUTE 2: /api/analyze (Text Analysis) ---
 @app.route("/api/analyze", methods=["POST"])
 def analyze_handler():
     try:
@@ -78,7 +84,6 @@ def analyze_handler():
         if not task_text:
             return jsonify({"error": "Missing task_text"}), 400
 
-        # LangChain Setup for Analysis Chain
         parser = JsonOutputParser(pydantic_object=TaskAnalysis)
         
         prompt = ChatPromptTemplate.from_messages([
@@ -86,27 +91,21 @@ def analyze_handler():
              f"You are a professional task analysis engine. The current date is {current_date_string}. "
              "Your sole purpose is to return ONLY a valid JSON object. "
              "Strictly format any date found as YYYY-MM-DD. \n"
-             "{format_instructions}" # This is the placeholder for the parser's instructions
+             "{format_instructions}"
             ),
             ("user", "{user_input}"),
         ])
         
-        # FIX: Inject the formatting instructions into the prompt template using .partial()
         prompt = prompt.partial(format_instructions=parser.get_format_instructions())
-        
         chain = prompt | llm | parser
         
-        # Invoke the LLM, supplying the variable the prompt expects
         result = chain.invoke({"user_input": task_text})
 
         return jsonify(result)
 
-    except ValidationError as e:
-        print(f"Validation Error: {e}")
-        return jsonify({"error": "AI returned invalid JSON structure.", "details": str(e)}), 500
     except Exception as e:
         print(f"ERROR in analyze.py: {e}")
-        return jsonify({"error": "Internal Server Error during AI analysis."}), 500
+        return jsonify({"error": f"Internal Server Error during AI analysis: {str(e)}"}), 500
 
 
 # --- ROUTE 3: /api/suggest (Dynamic Suggestions) ---
@@ -119,7 +118,6 @@ def suggest_handler():
         if not partial_task:
             return jsonify({"error": "Missing partial_task"}), 400
 
-        # LangChain Setup for Suggestions Chain
         parser = JsonOutputParser(pydantic_object=SuggestionList)
         
         prompt = ChatPromptTemplate.from_messages([
@@ -131,7 +129,6 @@ def suggest_handler():
             ("user", "{user_input}"),
         ])
         
-        # FIX: Inject the formatting instructions into the prompt template using .partial()
         prompt = prompt.partial(format_instructions=parser.get_format_instructions())
 
         chain = prompt | llm | parser
@@ -142,10 +139,53 @@ def suggest_handler():
 
     except Exception as e:
         print(f"ERROR in suggest.py: {e}")
-        return jsonify({"error": "Internal Server Error during suggestion generation."}), 500
+        return jsonify({"error": f"Internal Server Error during suggestion generation: {str(e)}"}), 500
+
+
+# --- ROUTE 4: /api/capture (Multimodal Image Analysis) ---
+@app.route("/api/capture", methods=["POST"])
+def capture_handler():
+    try:
+        data = request.get_json()
+        image_b64 = data.get("image_data")
+        text_prompt = data.get("text_prompt")
+
+        if not image_b64 or not text_prompt:
+            return jsonify({"error": "Missing image or prompt data"}), 400
+
+        # 1. Decode Base64 string into raw image bytes
+        # Splits the string: ["data:image/png;base64", "iVBORw0KGgoAAAANSUhEUgAAA..."]
+        image_data_uri_parts = image_b64.split(',')
+        mime_type = image_data_uri_parts[0].split(':')[1].split(';')[0]
+        image_bytes = base64.b64decode(image_data_uri_parts[1])
+        
+        # 2. Create the Multimodal Part (Image)
+        image_part = types.Part.from_bytes(
+            data=image_bytes,
+            mime_type=mime_type 
+        )
+        
+        # 3. Setup LangChain Chain for structured output (returns a list of tasks)
+        parser = JsonOutputParser(pydantic_object=ExtractedTasks)
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are an expert OCR and task extraction agent. Analyze the provided image and text prompt. Return all extracted tasks in the required JSON format. \n{format_instructions}"),
+            ("user", [image_part, text_prompt]) # Multimodal Input: Image and Text together
+        ])
+        
+        prompt = prompt.partial(format_instructions=parser.get_format_instructions())
+        chain = prompt | llm | parser
+        
+        # 4. Invoke the LLM
+        result = chain.invoke({})
+
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"ERROR in capture.py: {e}")
+        return jsonify({"error": f"Internal Server Error during image processing: {str(e)}"}), 500
 
 
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
-    # This block is used for local development only.
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
