@@ -5,5 +5,7 @@ langchain-google-genai
 langchain-core
 python-dotenv
 pydantic             
+google-genai
 
 gunicorn 
+
