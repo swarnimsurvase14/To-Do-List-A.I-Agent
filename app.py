@@ -160,8 +160,13 @@ def capture_handler():
         # 3. Construct the message using LangChain's HumanMessage.
         # This prevents the "Invalid Template" error by handling the image structure natively.
         full_prompt_text = (
-            f"You are an expert OCR and task extraction agent. "
-            f"{text_prompt}\n"
+            f"You are an expert OCR and task extraction agent. {text_prompt}\n"
+            f"INSTRUCTIONS:\n"
+            f"1. Transcribe ALL visible text, including HANDWRITING.\n"
+            f"2. Extract every single item that looks like a task, reminder, list item, or note.\n"
+            f"3. If a line of text is ambiguous, include it as a task anyway with category 'General'.\n"
+            f"4. If there is visible text but no clear 'tasks', create ONE task containing a summary of the text.\n"
+            f"5. NEVER return an empty list if there is text in the image.\n"
             f"Return the result ONLY as valid JSON. Do not include markdown ticks.\n"
             f"{parser.get_format_instructions()}"
         )
