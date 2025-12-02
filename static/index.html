@@ -30,11 +30,6 @@
         z-index: 100;
         background-color: rgba(0, 0, 0, 0.8);
     }
-    /* CRITICAL FIX: Ensure task input and suggestion box use consistent styling */
-    .suggestion-box-style {
-        border: 1px solid rgb(71 85 105); /* slate-600 */
-        background-color: rgba(51, 65, 85, 0.7); /* slate-700/70 */
-    }
   </style>
 </head>
 <body class="bg-slate-900 flex items-center justify-center min-h-screen text-slate-100 dark-mode">
@@ -49,7 +44,6 @@
         </button>
       </div>
       
-      <h2 class="text-xl font-extrabold text-indigo-400 mt-4 border-b border-slate-700 pb-1">1. Text Entry</h2>
       <textarea id="taskInput" rows="3" placeholder="e.g. Finish urgent homework tomorrow 5pm" 
         class="w-full p-4 rounded-lg bg-slate-700/70 text-slate-100 border border-slate-600 
                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
@@ -63,17 +57,8 @@
 
       <button onclick="addTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-full font-bold shadow-md 
                shadow-indigo-500/30 transition duration-150 disabled:bg-gray-500 disabled:cursor-not-allowed">
-        Add Task (Analyze Text)
+        Add Task
       </button>
-
-      <h2 class="text-xl font-extrabold text-indigo-400 mt-6 border-b border-slate-700 pb-1">2. Image Analysis</h2>
-      
-      <input type="file" id="imageInput" accept="image/jpeg, image/png" class="w-full p-3 rounded-lg bg-slate-700/50 text-slate-100 border border-slate-600">
-      
-      <button onclick="analyzeImage()" id="analyzeImageBtn" class="w-full bg-orange-600 hover:bg-orange-700 py-3 rounded-full font-bold shadow-md shadow-orange-500/30 transition duration-150 disabled:bg-gray-500 disabled:cursor-not-allowed">
-          Analyze Image for Tasks
-      </button>
-
       <button onclick="showList()" class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-full font-bold shadow-md transition duration-150">
         View Tasks
       </button>
@@ -224,7 +209,7 @@
     // ===========================================
     // EXTERNAL API ENDPOINTS
     // ===========================================
-    const API_BASE_URL = 'https://to-do-list-a-i-agent.onrender.com'; 
+    const API_BASE_URL = 'https://your-todolist-app.onrender.com'; 
     const API_ANALYZE_ENDPOINT = API_BASE_URL + '/api/analyze'; 
     const API_SUGGEST_ENDPOINT = API_BASE_URL + '/api/suggest'; 
 
@@ -317,7 +302,7 @@
         let trimmedText = text.trim();
         let box = document.getElementById("suggestionsBox");
 
-        // Show initial prompt if input is empty
+        // Show default message if input is empty
         if (trimmedText.length === 0) {
             box.innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>';
             return;
@@ -429,7 +414,7 @@
       // Clear suggestion box content after successful submission
       document.getElementById("suggestionsBox").innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>'; 
 
-      addButton.textContent = originalButtonText;
+      addButton.textContent = originalBtnText;
       addButton.disabled = false;
     }
     
@@ -476,6 +461,20 @@
         closeEditModal();
         saveTasks();
         showList();
+    }
+    
+    // ===========================================
+    // NEW: DELETE TASK FUNCTION
+    // ===========================================
+    function deleteTask(index) {
+        if (confirm("Are you sure you want to permanently delete this task?")) {
+            // Remove the task from the pending array
+            tasks.splice(index, 1);
+            
+            // Save the new state and refresh the display
+            saveTasks();
+            showList();
+        }
     }
 
 
@@ -549,7 +548,12 @@
                 <span onclick="openEditModal(${index})" class="cursor-pointer ${textColor} ${task.urgent || isOverdue ? 'text-red-600 font-extrabold tracking-tight' : 'font-semibold'} hover:text-indigo-600 transition duration-150">
                   ${task.text}
                 </span>
-                <button onclick="completeTask(${index})" class="text-emerald-400 hover:text-emerald-500 font-bold ml-4 p-1 rounded transition duration-150">✔ Done</button>
+                <div class="flex space-x-2">
+                    <button onclick="deleteTask(${index})" class="text-red-500 hover:text-red-600 font-bold p-1 rounded transition duration-150">
+                        🗑️
+                    </button>
+                    <button onclick="completeTask(${index})" class="text-emerald-400 hover:text-emerald-500 font-bold p-1 rounded transition duration-150">✔ Done</button>
+                </div>
               </div>
               
               <p class="text-xs text-slate-400 pt-1 flex items-center justify-between">
@@ -606,5 +610,4 @@
   </script>
 </body>
 </html>
-
 
