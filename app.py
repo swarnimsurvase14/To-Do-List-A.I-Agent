@@ -1,29 +1,25 @@
-import gc
 import os
 import json
-import base64 # Required for decoding the image
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 from typing import List
 
 # --- Core AI and Flask Dependencies ---
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import JsonOutputParser 
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.messages import HumanMessage # <--- Critical Import for Images
 from werkzeug.middleware.proxy_fix import ProxyFix
-from google import genai
-from google.genai import types
-# --- END Dependencies ---
 
-# Load environment variables (Render loads securely from dashboard)
-load_dotenv() 
+# --- Load Environment Variables ---
+load_dotenv()
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY environment variable not set. Please set it in Render.")
+    raise ValueError("GEMINI_API_KEY environment variable not set. Please set it in Render or .env file.")
 
 # --- Pydantic Schemas for Structured Output ---
 
@@ -47,12 +43,13 @@ class ExtractedTasks(BaseModel):
 
 
 # --- INITIALIZE FLASK AND GEMINI ---
-app = Flask(__name__, static_folder='static') 
+app = Flask(__name__, static_folder='static')
 
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1) 
-CORS(app) 
-client = genai.Client(api_key=GEMINI_API_KEY)
+# Fix for running behind a proxy (like Render/Heroku)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1)
+CORS(app)
 
+# Initialize LangChain Gemini Chat Model
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
     temperature=0.0,
@@ -139,7 +136,7 @@ def suggest_handler():
         return jsonify({"error": f"Internal Server Error during suggestion generation: {str(e)}"}), 500
 
 
-# --- ROUTE 4: /api/capture (Multimodal Image Analysis) ---
+# --- ROUTE 4: /api/capture (Multimodal Image Analysis - FIXED) ---
 @app.route("/api/capture", methods=["POST"])
 def capture_handler():
     try:
@@ -150,36 +147,40 @@ def capture_handler():
         if not image_b64 or not text_prompt:
             return jsonify({"error": "Missing image or prompt data"}), 400
             
-        # --- FIX: Robust Base64 Decoding ---
         # 1. Split the data URI string (e.g., "data:image/jpeg;base64,iVBORw...")
-        image_data_uri_parts = image_b64.split(',')
+        # We split only once on the comma to separate header from data
+        header, encoded = image_b64.split(",", 1)
         
-        # 2. Extract MIME type (e.g., image/jpeg)
-        mime_type = image_data_uri_parts[0].split(':')[1].split(';')[0]
-        
-        # 3. Decode ONLY the Base64 string (the second part of the split)
-        image_bytes = base64.b64decode(image_data_uri_parts[1])
+        # Extract mime type (e.g., "image/jpeg")
+        mime_type = header.split(":")[1].split(";")[0]
 
-        gc.collect()
-        # 4. Create the Multimodal Part (Image)
-        image_part = types.Part.from_bytes(
-            data=image_bytes,
-            mime_type=mime_type 
-        )
-        
-        # 5. Setup LangChain Chain for structured output
+        # 2. Setup Parser for JSON output
         parser = JsonOutputParser(pydantic_object=ExtractedTasks)
         
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are an expert OCR and task extraction agent. Analyze the provided image and text prompt. Return all extracted tasks in the required JSON format. \n{format_instructions}"),
-            ("user", [image_part, text_prompt]) # Multimodal Input: Image and Text together
-        ])
+        # 3. Construct the message using LangChain's HumanMessage.
+        # This prevents the "Invalid Template" error by handling the image structure natively.
+        full_prompt_text = (
+            f"You are an expert OCR and task extraction agent. "
+            f"{text_prompt}\n"
+            f"Return the result ONLY as valid JSON. Do not include markdown ticks.\n"
+            f"{parser.get_format_instructions()}"
+        )
+
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": full_prompt_text},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{mime_type};base64,{encoded}"}
+                }
+            ]
+        )
         
-        prompt = prompt.partial(format_instructions=parser.get_format_instructions())
-        chain = prompt | llm | parser
+        # 4. Invoke the chain directly with the message list
+        # We bypass ChatPromptTemplate to inject the image payload directly
+        chain = llm | parser
         
-        # 6. Invoke the LLM
-        result = chain.invoke({})
+        result = chain.invoke([message])
 
         return jsonify(result)
 
@@ -192,5 +193,3 @@ def capture_handler():
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-
-
