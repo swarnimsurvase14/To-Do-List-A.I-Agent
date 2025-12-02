@@ -149,7 +149,7 @@ def capture_handler():
 
         if not image_b64 or not text_prompt:
             return jsonify({"error": "Missing image or prompt data"}), 400
-
+            
         # --- FIX: Robust Base64 Decoding ---
         # 1. Split the data URI string (e.g., "data:image/jpeg;base64,iVBORw...")
         image_data_uri_parts = image_b64.split(',')
@@ -159,7 +159,8 @@ def capture_handler():
         
         # 3. Decode ONLY the Base64 string (the second part of the split)
         image_bytes = base64.b64decode(image_data_uri_parts[1])
-        
+
+        gc.collect()
         # 4. Create the Multimodal Part (Image)
         image_part = types.Part.from_bytes(
             data=image_bytes,
@@ -191,4 +192,5 @@ def capture_handler():
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
 
