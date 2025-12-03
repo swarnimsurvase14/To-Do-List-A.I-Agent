@@ -41,7 +41,13 @@ class ExtractedTasks(BaseModel):
     """Schema for returning multiple structured tasks extracted from an image."""
     extracted_tasks: List[TaskAnalysis] = Field(description="A list of structured tasks extracted from the image.")
 
-
+class RetrospectiveAnalysis(BaseModel):
+    """Schema for the productivity coaching report."""
+    summary: str = Field(description="A 1-sentence summary of performance (e.g., 'You crushed the low-hanging fruit but avoided the big project').")
+    productivity_score: int = Field(description="A score from 0-100 based on completion rate and effort.")
+    patterns: List[str] = Field(description="3 specific observations about the user's behavior (e.g., 'You procrastinate on High effort tasks').")
+    advice: List[str] = Field(description="3 actionable coaching tips for next week.")
+    
 # --- INITIALIZE FLASK AND GEMINI ---
 app = Flask(__name__, static_folder='static')
 
@@ -193,8 +199,48 @@ def capture_handler():
         # Catch decoding and API errors here and return a clear 500
         print(f"ERROR in capture.py: {e}")
         return jsonify({"error": f"Internal Server Error during image processing: {str(e)}"}), 500
+        
+# --- ROUTE 5: /api/retrospective (Productivity Coaching) ---
+@app.route("/api/retrospective", methods=["POST"])
+def retrospective_handler():
+    try:
+        data = request.get_json()
+        completed_tasks = data.get("completed", [])
+        pending_tasks = data.get("pending", [])
 
+        # Validate we have data to analyze
+        if not completed_tasks and not pending_tasks:
+             return jsonify({"error": "No tasks found to analyze."}), 400
+
+        parser = JsonOutputParser(pydantic_object=RetrospectiveAnalysis)
+        
+        # We convert the list objects to strings for the prompt
+        completed_str = json.dumps(completed_tasks)
+        pending_str = json.dumps(pending_tasks)
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", 
+             "You are an elite Productivity Coach. Analyze the user's 'Completed' vs 'Pending' tasks. "
+             "Look for patterns: Are they ignoring high-effort tasks? Are they completing urgent items? "
+             "Be constructive but honest. "
+             f"The response format must be:\n"
+             "{format_instructions}"
+            ),
+            ("user", f"Completed Tasks: {completed_str}\n\nPending Tasks: {pending_str}"),
+        ])
+        
+        prompt = prompt.partial(format_instructions=parser.get_format_instructions())
+        chain = prompt | llm | parser
+        
+        result = chain.invoke({})
+
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"ERROR in retrospective.py: {e}")
+        return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
 
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
