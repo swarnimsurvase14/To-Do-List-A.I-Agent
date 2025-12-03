@@ -214,25 +214,32 @@ def retrospective_handler():
 
         parser = JsonOutputParser(pydantic_object=RetrospectiveAnalysis)
         
-        # We convert the list objects to strings for the prompt
+        # 1. Convert lists to string format
         completed_str = json.dumps(completed_tasks)
         pending_str = json.dumps(pending_tasks)
 
+        # 2. Define prompt with placeholders {completed} and {pending}
+        # We DO NOT put the JSON directly here, or LangChain will crash.
         prompt = ChatPromptTemplate.from_messages([
             ("system", 
              "You are an elite Productivity Coach. Analyze the user's 'Completed' vs 'Pending' tasks. "
              "Look for patterns: Are they ignoring high-effort tasks? Are they completing urgent items? "
              "Be constructive but honest. "
-             f"The response format must be:\n"
+             "The response format must be:\n"
              "{format_instructions}"
             ),
-            ("user", f"Completed Tasks: {completed_str}\n\nPending Tasks: {pending_str}"),
+            ("user", "Here is my data:\n\nCOMPLETED TASKS:\n{completed}\n\nPENDING TASKS:\n{pending}"),
         ])
         
         prompt = prompt.partial(format_instructions=parser.get_format_instructions())
+        
         chain = prompt | llm | parser
         
-        result = chain.invoke({})
+        # 3. Pass the actual JSON strings here safely
+        result = chain.invoke({
+            "completed": completed_str,
+            "pending": pending_str
+        })
 
         return jsonify(result)
 
@@ -243,4 +250,5 @@ def retrospective_handler():
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
 
