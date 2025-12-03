@@ -83,6 +83,13 @@
       </div>
       <ul id="taskList" class="space-y-4"></ul>
 
+      <!-- Coaching Button -->
+      <button onclick="generateRetrospective()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-3 rounded-xl font-bold shadow-lg shadow-blue-900/50 flex items-center justify-center space-x-2 transition transform hover:scale-[1.02]">
+        <span>🤖</span>
+        <span>Generate Weekly Coach Report</span>
+      </button>
+
+      <h2 class="text-lg font-extrabold pt-2 border-t border-slate-700">✅ Completed</h2>
       <h2 class="text-lg font-extrabold pt-2 border-t border-slate-700">✅ Completed</h2>
       <ul id="completedList" class="space-y-4"></ul>
 
@@ -121,6 +128,50 @@
       <div class="flex justify-end space-x-3 mt-6">
         <button onclick="closeEditModal()" class="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-600 rounded-full hover:bg-slate-500 transition duration-150">Cancel</button>
         <button onclick="saveEdit()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition duration-150">Save Changes</button>
+      </div>
+    </div>
+  </div>
+  <!-- Coaching Report Modal -->
+  <div id="coachModal" class="fixed inset-0 modal-overlay hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-700 flex flex-col max-h-[90vh]">
+      
+      <!-- Header with Score -->
+      <div class="bg-indigo-900/50 p-6 rounded-t-2xl border-b border-indigo-500/30 flex justify-between items-center">
+        <div>
+           <h2 class="text-2xl font-bold text-white tracking-tight">Weekly Review</h2>
+           <p class="text-indigo-200 text-sm">AI Productivity Coach</p>
+        </div>
+        <div class="text-center">
+            <span id="coachScore" class="text-4xl font-black text-emerald-400">--</span>
+            <div class="text-[10px] uppercase tracking-wider text-slate-400">Score</div>
+        </div>
+      </div>
+
+      <!-- Content (Scrollable) -->
+      <div class="p-6 overflow-y-auto space-y-6">
+        
+        <!-- Summary -->
+        <div class="bg-slate-700/50 p-4 rounded-xl">
+            <h3 class="text-sm font-bold text-slate-400 uppercase mb-2">Summary</h3>
+            <p id="coachSummary" class="text-slate-200 italic leading-relaxed">Analyzing your week...</p>
+        </div>
+
+        <!-- Patterns -->
+        <div>
+            <h3 class="text-sm font-bold text-slate-400 uppercase mb-2">Behavior Patterns</h3>
+            <ul id="coachPatterns" class="space-y-2"></ul>
+        </div>
+
+        <!-- Advice -->
+        <div>
+            <h3 class="text-sm font-bold text-emerald-400 uppercase mb-2">💡 Coaching Advice</h3>
+            <ul id="coachAdvice" class="space-y-2"></ul>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 border-t border-slate-700 flex justify-end">
+        <button onclick="closeCoachModal()" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium transition">Close</button>
       </div>
     </div>
   </div>
@@ -507,6 +558,71 @@
       addButton.textContent = originalBtnText;
       addButton.disabled = false;
     }
+
+    // ===========================================
+    // WEEKLY RETROSPECTIVE AGENT
+    // ===========================================
+    
+    async function generateRetrospective() {
+        const coachModal = document.getElementById('coachModal');
+        const summaryEl = document.getElementById('coachSummary');
+        const scoreEl = document.getElementById('coachScore');
+        const patternsEl = document.getElementById('coachPatterns');
+        const adviceEl = document.getElementById('coachAdvice');
+
+        // Open Modal immediately with loading state
+        coachModal.classList.remove('hidden');
+        summaryEl.innerHTML = '<span class="animate-pulse">🧠 Crunching the numbers... analyzing your habits...</span>';
+        scoreEl.innerText = '--';
+        patternsEl.innerHTML = '';
+        adviceEl.innerHTML = '';
+
+        try {
+            const API_RETRO_ENDPOINT = API_BASE_URL + '/api/retrospective';
+            
+            // Prepare payload with both lists
+            const payload = {
+                completed: completed, // Uses your global completed array
+                pending: tasks        // Uses your global pending tasks array
+            };
+
+            const response = await fetch(API_RETRO_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Coach agent failed to respond.");
+
+            const data = await response.json();
+
+            // Populate Data
+            summaryEl.innerText = data.summary;
+            
+            // Animate Score
+            scoreEl.innerText = data.productivity_score;
+            if(data.productivity_score >= 80) scoreEl.className = "text-4xl font-black text-emerald-400";
+            else if(data.productivity_score >= 50) scoreEl.className = "text-4xl font-black text-yellow-400";
+            else scoreEl.className = "text-4xl font-black text-red-400";
+
+            // Populate Lists
+            patternsEl.innerHTML = data.patterns.map(p => 
+                `<li class="flex items-start space-x-2 text-sm text-slate-300"><span class="text-indigo-400 mt-1">●</span><span>${p}</span></li>`
+            ).join('');
+
+            adviceEl.innerHTML = data.advice.map(a => 
+                `<li class="bg-emerald-900/20 border border-emerald-500/20 p-3 rounded-lg text-sm text-emerald-100 flex items-start space-x-2"><span>🚀</span><span>${a}</span></li>`
+            ).join('');
+
+        } catch (error) {
+            console.error(error);
+            summaryEl.innerHTML = '<span class="text-red-400">Error generating report. Do you have enough tasks for me to analyze?</span>';
+        }
+    }
+
+    function closeCoachModal() {
+        document.getElementById('coachModal').classList.add('hidden');
+    }
     
     // ===========================================
     // TASK EDITING LOGIC (UPDATE & SAVE)
@@ -700,5 +816,6 @@
   </script>
 </body>
 </html>
+
 
 
