@@ -406,9 +406,9 @@
                 });
                 saveTasks();
                 showList();
-                alert(`✨ Extracted ${data.extracted_tasks.length} tasks!`);
+                showToast(`✨ Successfully extracted ${data.extracted_tasks.length} tasks!`, "success");
             } else {
-                alert("No tasks found in image.");
+                showToast("No readable tasks found in that image.", "info");
             }
 
         } catch (error) {
@@ -546,6 +546,7 @@
         tasks.splice(index, 1);
         saveTasks();
         showList();
+        showToast("Task completed! Great job!", "success");
     }
     function deleteTask(index) {
         if(confirm("Delete this task?")) {
@@ -608,5 +609,6 @@
   </script>
 </body>
 </html>
+
 
 
