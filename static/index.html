@@ -3,32 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI To-Do List Agent (Production Ready)</title>
+  <title>To-Do List AI Agent</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     /* Ensures the date input color is manageable in both themes */
-    input[type="date"] {
-        color-scheme: dark; 
-        background-color: #334155; 
-        border-radius: 0.5rem;
-        padding: 0.5rem;
-    }
-    /* Base Dark Mode Classes (Default) */
-    .dark-mode {
-        transition: background-color 0.3s, color 0.3s;
-    }
-    /* Light Mode Classes: Define the visual changes for the body and card */
-    .light-mode {
-        background-color: #f8fafc; /* slate-50 */
-        color: #1e293b; /* slate-900 */
-    }
-    .light-mode .card {
-        background-color: #ffffff; /* white */
-    }
-    /* Added styles for the modal overlay */
-    .modal-overlay {
-        z-index: 100;
-        background-color: rgba(0, 0, 0, 0.8);
+    body { font-family: 'Inter', sans-serif; }
+    
+    /* Scrollbar styling for the glass look */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+    /* Hide the default file input text */
+    input[type="file"]::file-selector-button { display: none; }
     }
   </style>
 </head>
@@ -816,6 +805,7 @@
   </script>
 </body>
 </html>
+
 
 
 
