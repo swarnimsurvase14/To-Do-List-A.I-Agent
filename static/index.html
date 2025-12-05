@@ -204,6 +204,8 @@
     </div>
   </div>
 
+  <div id="toast-container"></div>
+  
   <script>
     let tasks = [];
     let completed = [];
@@ -337,7 +339,12 @@
 
     async function addTask() {
       let input = document.getElementById("taskInput").value.trim();
-      if (!input) return alert("Please enter a task!");
+      if (!input) return showToast("Please enter a task description.", "error");
+
+      if (analyzed) {
+         // ... code ...
+         showToast(`Task added: ${analyzed.text}`, "success");
+      }
 
       const btn = document.getElementById('addTaskBtn');
       const originalText = btn.innerHTML;
@@ -573,7 +580,33 @@
         showList();
         closeEditModal();
     }
+
+    function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    
+    // Add classes
+    toast.className = `toast ${type}`;
+    
+    // Icon selection
+    let icon = '';
+    if (type === 'success') icon = '<svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+    else if (type === 'error') icon = '<svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+    else icon = '<svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+
+    toast.innerHTML = `${icon} <span>${message}</span>`;
+    
+    container.appendChild(toast);
+
+    // Auto-remove after 3.5 seconds
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.4s forwards';
+        // Wait for animation to finish before removing from DOM
+        setTimeout(() => toast.remove(), 400);
+    }, 3500);
+}
   </script>
 </body>
 </html>
+
 
