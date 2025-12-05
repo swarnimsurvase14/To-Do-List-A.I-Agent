@@ -3,516 +3,303 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>To-Do List AI Agent</title>
+  <title>AI Project Manager (Pro)</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  
   <style>
-    /* Ensures the date input color is manageable in both themes */
     body { font-family: 'Inter', sans-serif; }
     
-    /* Scrollbar styling for the glass look */
+    /* Custom Scrollbar for Glass Aesthetic */
     ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #1e293b; }
-    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-    /* Hide the default file input text */
+    /* Hide default file input button */
     input[type="file"]::file-selector-button { display: none; }
-    }
+    
+    /* Smooth fade in for lists */
+    .fade-in { animation: fadeIn 0.5s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
+
 <body class="bg-slate-900 min-h-screen text-slate-100 selection:bg-indigo-500 selection:text-white overflow-x-hidden">
 
   <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
     <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl animate-pulse"></div>
-    <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+    <div class="absolute top-[40%] left-[40%] w-72 h-72 bg-emerald-600/10 rounded-full blur-3xl mix-blend-screen"></div>
   </div>
 
-  <div class="w-full max-w-3xl mx-auto p-6 md:p-12">
+  <div class="w-full max-w-4xl mx-auto p-6 md:p-12">
     
-    <div id="addTaskScreen" class="space-y-5">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-extrabold text-indigo-400 tracking-wide">AI Project Manager</h1>
-        <button onclick="toggleTheme()" id="themeToggle" class="p-2 rounded-full bg-slate-700/50 hover:bg-indigo-600/50 transition duration-150">
-          <span id="themeIcon">☀️</span>
-        </button>
+    <div class="flex justify-between items-end mb-10 border-b border-slate-800 pb-6">
+      <div>
+        <h1 class="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400">AI Project Manager</h1>
+        <p class="text-slate-400 mt-2 font-light">Intelligent Task Orchestration & Analysis</p>
       </div>
-      
-      <h2 class="text-xl font-extrabold text-indigo-400 mt-4 border-b border-slate-700 pb-1">1. Manual Text Input</h2>
-      <textarea id="taskInput" rows="3" placeholder="e.g. Finish urgent homework tomorrow 5pm" 
-        class="w-full p-4 rounded-lg bg-slate-700/70 text-slate-100 border border-slate-600 
-               focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
-        oninput="handleInput(this.value)"></textarea>
-      
-      <div id="suggestionsBoxContainer" class="h-40 mt-2"> 
-        <div id="suggestionsBox" class="bg-slate-700 p-2 rounded-lg text-sm space-y-2 border border-indigo-600/50 h-full overflow-y-auto">
-           <div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>
-        </div>
-      </div>
-
-      <button onclick="addTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-full font-bold shadow-md 
-               shadow-indigo-500/30 transition duration-150 disabled:bg-gray-500 disabled:cursor-not-allowed">
-        Add Task (Analyze Text)
-      </button>
-
-      <h2 class="text-xl font-extrabold text-indigo-400 mt-6 border-b border-slate-700 pb-1">2. Image Analysis</h2>
-      
-      <input type="file" id="imageInput" accept="image/jpeg, image/png" class="w-full p-3 rounded-lg bg-slate-700/50 text-slate-100 border border-slate-600">
-      
-      <button onclick="analyzeImage()" id="analyzeImageBtn" class="w-full bg-orange-600 hover:bg-orange-700 py-3 rounded-full font-bold shadow-md shadow-orange-500/30 transition duration-150 disabled:bg-gray-500 disabled:cursor-not-allowed">
-          Analyze Image for Tasks
-      </button>
-
-      <button onclick="showList()" class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-full font-bold shadow-md transition duration-150">
-        View Tasks
+      <button onclick="generateRetrospective()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-400 px-5 py-2.5 rounded-xl text-sm font-bold transition shadow-lg hover:shadow-indigo-500/20 flex items-center gap-2 group">
+        <span class="group-hover:rotate-12 transition-transform">📊</span> Weekly Coach Report
       </button>
     </div>
-    
-    <div id="taskListScreen" class="hidden space-y-5">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-extrabold text-indigo-400 tracking-wide">Your Tasks</h1>
-        <button onclick="toggleTheme()" class="p-2 rounded-full bg-slate-700/50 hover:bg-indigo-600/50 transition duration-150">
-          <span id="themeIcon2">☀️</span>
-        </button>
+
+    <div class="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-2xl mb-12 relative overflow-visible group-focus-within:ring-2 group-focus-within:ring-indigo-500/50 transition-all">
+      
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-70"></div>
+      
+      <div class="relative z-10">
+         <textarea id="taskInput" rows="2" placeholder="✨ Describe a task (e.g. 'Finish report tomorrow at 5pm') or paste an image below..." 
+          class="w-full bg-slate-900/60 text-slate-100 p-5 rounded-2xl border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition resize-none placeholder-slate-500 text-lg shadow-inner"
+          oninput="handleInput(this.value)"></textarea>
+         
+         <div id="suggestionsBoxContainer" class="absolute left-0 right-0 top-full mt-2 z-50">
+             <div id="suggestionsBox" class="hidden bg-slate-800 border border-slate-600 rounded-xl shadow-2xl p-1 overflow-hidden"></div>
+         </div>
       </div>
-      <ul id="taskList" class="space-y-4"></ul>
 
-      <!-- Coaching Button -->
-      <button onclick="generateRetrospective()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-3 rounded-xl font-bold shadow-lg shadow-blue-900/50 flex items-center justify-center space-x-2 transition transform hover:scale-[1.02]">
-        <span>🤖</span>
-        <span>Generate Weekly Coach Report</span>
-      </button>
+      <div class="flex flex-col md:flex-row gap-4 mt-5">
+          <label class="flex-1 cursor-pointer bg-slate-900/30 border-2 border-slate-700 border-dashed rounded-xl hover:bg-slate-800 hover:border-indigo-500 transition flex items-center justify-center p-4 text-sm text-slate-400 gap-3 group-file relative overflow-hidden">
+              <div class="absolute inset-0 bg-indigo-500/5 opacity-0 group-file-hover:opacity-100 transition"></div>
+              <svg class="w-6 h-6 text-slate-500 group-file-hover:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              <span id="fileNameDisplay" class="font-medium relative z-10">Drop image for AI analysis...</span>
+              <input type="file" id="imageInput" accept="image/jpeg, image/png" class="hidden" onchange="handleFileSelect(this)">
+          </label>
 
-      <h2 class="text-lg font-extrabold pt-2 border-t border-slate-700">✅ Completed</h2>
-      <h2 class="text-lg font-extrabold pt-2 border-t border-slate-700">✅ Completed</h2>
-      <ul id="completedList" class="space-y-4"></ul>
-
-      <button onclick="backToAdd()" class="w-full bg-purple-600 hover:bg-purple-700 py-3 rounded-full font-bold mt-6 shadow-md transition duration-150">
-        Add More
-      </button>
+          <button onclick="addTask()" id="addTaskBtn" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-10 py-4 rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[160px]">
+             <span>Analyze & Add</span>
+             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </button>
+      </div>
     </div>
-    
-  </div>
-  
-  <div id="editModal" class="fixed inset-0 modal-overlay hidden flex items-center justify-center">
-    <div class="bg-slate-700 p-6 rounded-lg shadow-2xl w-full max-w-sm transform transition-all duration-300">
-      <h2 class="text-xl font-bold mb-4 text-indigo-300">Edit Task</h2>
+
+    <div class="space-y-10">
+       
+       <div class="fade-in">
+         <div class="flex items-center gap-3 mb-6">
+            <h2 class="text-2xl font-bold text-slate-200">Active Tasks</h2>
+            <span id="pendingCount" class="text-xs font-bold bg-indigo-900/50 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-full">0</span>
+         </div>
+         
+         <ul id="taskList" class="grid grid-cols-1 gap-4">
+            </ul>
+       </div>
+
+       <div class="fade-in">
+         <div class="flex items-center gap-3 mb-6 mt-12 border-t border-slate-800 pt-8">
+            <h2 class="text-xl font-bold text-slate-500">Completed History</h2>
+            <span id="completedCount" class="text-xs font-bold bg-slate-800 text-slate-500 px-2.5 py-1 rounded-full">0</span>
+         </div>
+         <ul id="completedList" class="space-y-3 opacity-70 hover:opacity-100 transition duration-500">
+            </ul>
+       </div>
+    </div>
+
+  </div> <div id="editModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+    <div class="bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl w-full max-w-md transform transition-all scale-100">
+      <h2 class="text-2xl font-bold mb-6 text-white">Edit Task</h2>
       <input type="hidden" id="editTaskIndex">
-      <div class="space-y-4">
+      <div class="space-y-5">
         <div>
-          <label for="editText" class="block text-sm font-medium text-slate-300 mb-1">Task Description</label>
-          <input type="text" id="editText" class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 focus:ring-indigo-500 focus:border-indigo-500 text-slate-50">
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Description</label>
+          <input type="text" id="editText" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white focus:ring-2 focus:ring-indigo-500 outline-none">
         </div>
-        <div>
-          <label for="editDate" class="block text-sm font-medium text-slate-300 mb-1">Due Date</label>
-          <input type="date" id="editDate" class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 focus:ring-indigo-500 focus:border-indigo-500 text-slate-50">
-          <p class="text-xs text-slate-400 mt-1">Leave blank to use the AI's complex time/date phrase.</p>
-        </div>
-        <div>
-          <label for="editEffort" class="block text-sm font-medium text-slate-300 mb-1">Effort Score</label>
-          <select id="editEffort" class="w-full p-2 rounded-md bg-slate-600 border border-slate-500 text-slate-50">
-            <option value="Critical">Critical</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-            <option value="Unspecified">Unspecified</option>
-          </select>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Due Date</label>
+              <input type="date" id="editDate" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Effort Level</label>
+              <select id="editEffort" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option value="Critical">Critical</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+                <option value="Unspecified">Unspecified</option>
+              </select>
+            </div>
         </div>
       </div>
-      <div class="flex justify-end space-x-3 mt-6">
-        <button onclick="closeEditModal()" class="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-600 rounded-full hover:bg-slate-500 transition duration-150">Cancel</button>
-        <button onclick="saveEdit()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition duration-150">Save Changes</button>
-      </div>
-    </div>
-  </div>
-  <!-- Coaching Report Modal -->
-  <div id="coachModal" class="fixed inset-0 modal-overlay hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-700 flex flex-col max-h-[90vh]">
-      
-      <!-- Header with Score -->
-      <div class="bg-indigo-900/50 p-6 rounded-t-2xl border-b border-indigo-500/30 flex justify-between items-center">
-        <div>
-           <h2 class="text-2xl font-bold text-white tracking-tight">Weekly Review</h2>
-           <p class="text-indigo-200 text-sm">AI Productivity Coach</p>
-        </div>
-        <div class="text-center">
-            <span id="coachScore" class="text-4xl font-black text-emerald-400">--</span>
-            <div class="text-[10px] uppercase tracking-wider text-slate-400">Score</div>
-        </div>
-      </div>
-
-      <!-- Content (Scrollable) -->
-      <div class="p-6 overflow-y-auto space-y-6">
-        
-        <!-- Summary -->
-        <div class="bg-slate-700/50 p-4 rounded-xl">
-            <h3 class="text-sm font-bold text-slate-400 uppercase mb-2">Summary</h3>
-            <p id="coachSummary" class="text-slate-200 italic leading-relaxed">Analyzing your week...</p>
-        </div>
-
-        <!-- Patterns -->
-        <div>
-            <h3 class="text-sm font-bold text-slate-400 uppercase mb-2">Behavior Patterns</h3>
-            <ul id="coachPatterns" class="space-y-2"></ul>
-        </div>
-
-        <!-- Advice -->
-        <div>
-            <h3 class="text-sm font-bold text-emerald-400 uppercase mb-2">💡 Coaching Advice</h3>
-            <ul id="coachAdvice" class="space-y-2"></ul>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div class="p-4 border-t border-slate-700 flex justify-end">
-        <button onclick="closeCoachModal()" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium transition">Close</button>
+      <div class="flex justify-end space-x-3 mt-8">
+        <button onclick="closeEditModal()" class="px-5 py-2 text-sm font-semibold text-slate-300 hover:text-white transition">Cancel</button>
+        <button onclick="saveEdit()" class="px-6 py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition">Save Changes</button>
       </div>
     </div>
   </div>
+
+  <div id="coachModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
+    <div class="bg-slate-800 rounded-3xl shadow-2xl w-full max-w-xl border border-slate-700 flex flex-col max-h-[85vh] overflow-hidden">
+      <div class="bg-slate-900/50 p-8 border-b border-slate-700 flex justify-between items-center">
+        <div>
+           <h2 class="text-3xl font-extrabold text-white tracking-tight">Weekly Review</h2>
+           <p class="text-indigo-400 text-sm font-medium mt-1">AI Productivity Coach</p>
+        </div>
+        <div class="text-center bg-slate-800 p-3 rounded-xl border border-slate-700">
+            <span id="coachScore" class="text-4xl font-black text-emerald-400 block leading-none">--</span>
+            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mt-1">Score</span>
+        </div>
+      </div>
+      <div class="p-8 overflow-y-auto space-y-8 custom-scrollbar">
+        <div class="bg-indigo-900/20 border border-indigo-500/20 p-5 rounded-xl">
+            <h3 class="text-xs font-bold text-indigo-300 uppercase mb-2 tracking-widest">Executive Summary</h3>
+            <p id="coachSummary" class="text-slate-200 italic leading-relaxed text-lg">Analyzing your week...</p>
+        </div>
+        <div>
+            <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 tracking-widest">Observed Patterns</h3>
+            <ul id="coachPatterns" class="space-y-3"></ul>
+        </div>
+        <div>
+            <h3 class="text-xs font-bold text-emerald-400 uppercase mb-3 tracking-widest">💡 Strategic Advice</h3>
+            <ul id="coachAdvice" class="space-y-3"></ul>
+        </div>
+      </div>
+      <div class="p-5 border-t border-slate-700 flex justify-end bg-slate-900/30">
+        <button onclick="closeCoachModal()" class="px-8 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition">Close Report</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let tasks = [];
     let completed = [];
-    let suggestionTimeout = null; 
-    let base64ImageString = null; // NEW: Variable to hold Base64 image data
-
-    // ===========================================
-    // STORAGE HELPER FUNCTIONS
-    // ===========================================
-    function loadTasks() {
-        const storedTasks = localStorage.getItem('ai_tasks');
-        const storedCompleted = localStorage.getItem('ai_completed');
-        
-        if (storedTasks) tasks = JSON.parse(storedTasks);
-        if (storedCompleted) completed = JSON.parse(storedCompleted);
-    }
-
-    function saveTasks() {
-        localStorage.setItem('ai_tasks', JSON.stringify(tasks));
-        localStorage.setItem('ai_completed', JSON.stringify(completed));
-    }
+    let suggestionTimeout = null;
+    let base64ImageString = null;
     
-    // ===========================================
-    // THEME LOGIC
-    // ===========================================
-    const mainCard = document.querySelector('.card');
-
-    function applyTheme(isDark) {
-        const body = document.body;
-        const icon1 = document.getElementById('themeIcon');
-        const icon2 = document.getElementById('themeIcon2');
-        const input = document.getElementById('taskInput');
-        const modalInputs = document.querySelectorAll('#editModal input[type="text"], #editModal select, #editModal input[type="date"]');
-        const modalContainer = document.querySelector('#editModal > div');
-
-
-        // --- Core Body and Card Class Swapping ---
-        if (isDark) {
-            body.classList.replace('light-mode', 'dark-mode');
-            mainCard.classList.replace('bg-white', 'bg-slate-800');
-            body.classList.remove('text-gray-800', 'bg-slate-50');
-            body.classList.add('text-slate-100', 'bg-slate-900');
-
-            // Apply Dark Mode input colors
-            input.classList.add('bg-slate-700/70', 'text-slate-100', 'border-slate-600');
-            input.classList.remove('bg-gray-200', 'text-gray-800', 'border-gray-400');
-            modalContainer.classList.replace('bg-white', 'bg-slate-700');
-            
-            icon1.innerHTML = '☀️';
-            if (icon2) icon2.innerHTML = '☀️';
-        } else {
-            // Apply Light Mode
-            body.classList.replace('dark-mode', 'light-mode');
-            mainCard.classList.replace('bg-slate-800', 'bg-white');
-            body.classList.remove('text-slate-100', 'bg-slate-900');
-            body.classList.add('text-gray-800', 'bg-slate-50');
-
-            // Apply Light Mode input colors
-            input.classList.remove('bg-slate-700/70', 'text-slate-100', 'border-slate-600');
-            input.classList.add('bg-gray-200', 'text-gray-800', 'border-gray-400');
-            modalContainer.classList.replace('bg-slate-700', 'bg-white');
-
-
-            icon1.innerHTML = '🌙';
-            if (icon2) icon2.innerHTML = '🌙';
-        }
-        
-        // Update all modal inputs (text, select, date)
-        modalInputs.forEach(el => {
-             if (isDark) {
-                el.classList.add('bg-slate-600', 'text-slate-50');
-                el.classList.remove('bg-white', 'text-gray-800');
-            } else {
-                el.classList.remove('bg-slate-600', 'text-slate-50');
-                el.classList.add('bg-white', 'text-gray-800');
-            }
-        });
-
-
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    }
-
-    function toggleTheme() {
-        const isCurrentlyDark = document.body.classList.contains('dark-mode');
-        applyTheme(!isCurrentlyDark); 
-    }
-
-    function loadInitialTheme() {
-        const savedTheme = localStorage.getItem('theme');
-        const shouldBeDark = (savedTheme === 'dark' || savedTheme === null);
-        applyTheme(shouldBeDark); 
-    }
-    
-    // ===========================================
-    // EXTERNAL API ENDPOINTS
-    // ===========================================
+    // API CONFIG
     const API_BASE_URL = ''; 
-    const API_ANALYZE_ENDPOINT = API_BASE_URL + '/api/analyze'; 
-    const API_SUGGEST_ENDPOINT = API_BASE_URL + '/api/suggest'; 
-    // NEW ENDPOINT
-    const API_CAPTURE_ENDPOINT = API_BASE_URL + '/api/capture'; 
+    const API_ANALYZE_ENDPOINT = '/api/analyze';
+    const API_SUGGEST_ENDPOINT = '/api/suggest';
+    const API_CAPTURE_ENDPOINT = '/api/capture';
+    const API_RETRO_ENDPOINT = '/api/retrospective';
 
-
-    // --- INITIAL SETUP AND DATA LOAD ---
-    requestNotificationPermission(); 
-    loadTasks();
-    loadInitialTheme(); // Load saved theme setting
-
-    // --- NEW: Event listener to read the file immediately upon selection ---
+    // --- INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', () => {
-        const fileInput = document.getElementById('imageInput');
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    if (file.size > 7 * 1024 * 1024) { // 7 MB limit check
-                        return alert("Image file is too large. Max size is 7MB.");
-                    }
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        // Capture the full Data URL (data:image/jpeg;base64,...)
-                        base64ImageString = reader.result;
-                        document.getElementById('taskInput').placeholder = 'Image loaded and ready for analysis.';
-                    };
-                    // Read the file as a Data URL (includes the Base64 string)
-                    reader.readAsDataURL(file);
-                }
-            });
-        }
+        loadTasks();
+        showList(); // Render immediately
+        requestNotificationPermission();
     });
-    
-    
-    // ===========================================
-    // UTILITY FUNCTIONS & REMINDERS
-    // ===========================================
-    
-    function formatDateToInput(timeStr) {
-        if (timeStr && timeStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-            return timeStr.substring(0, 10);
+
+    // --- FILE HANDLING ---
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        if (file) {
+            document.getElementById('fileNameDisplay').innerText = `📸 ${file.name}`;
+            document.getElementById('fileNameDisplay').classList.add('text-indigo-300');
+            
+            if (file.size > 7 * 1024 * 1024) return alert("File too large. Max 7MB.");
+            
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                base64ImageString = reader.result;
+                // Auto trigger analysis or wait for user to click button?
+                // Let's analyze immediately for better UX
+                analyzeImage(); 
+            };
+            reader.readAsDataURL(file);
         }
-        return '';
     }
 
-    function requestNotificationPermission() {
-        if (!("Notification" in window)) return;
-        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-            Notification.requestPermission();
-        }
-    }
-    
-    function scheduleReminder(task) {
-        let targetTimeStr = task.time.match(/(\d{4}-\d{2}-\d{2})/) ? task.time : task.time + ' 09:00';
+    // --- CORE RENDERING ENGINE (The "Cards") ---
+    function showList() {
+        const list = document.getElementById("taskList");
+        const completedList = document.getElementById("completedList");
         
-        let targetDate = new Date(targetTimeStr);
+        list.innerHTML = "";
+        completedList.innerHTML = "";
 
-        if (isNaN(targetDate.getTime()) || task.time.toLowerCase().includes('unspecified')) {
-            return; 
-        }
+        // Update Counts
+        document.getElementById("pendingCount").innerText = tasks.length;
+        document.getElementById("completedCount").innerText = completed.length;
 
-        let now = new Date();
-        let delay = targetDate.getTime() - now.getTime();
-
-        if (delay > 0 && delay < 2073600000) { 
-            setTimeout(() => {
-                if (Notification.permission === "granted") {
-                    new Notification("⏳ TASK DUE SOON!", {
-                        body: task.text + " - Category: " + task.category,
-                        icon: 'https://placehold.co/60x60/4f46e5/white?text=AI', 
-                        tag: 'task-' + Date.now() 
-                    });
-                }
-            }, delay);
-        }
-    }
-
-
-    // ===========================================
-    // LOCAL FALLBACK LOGIC
-    // ===========================================
-    function analyzeTaskFallback(text) {
-        let task = { 
-            text, 
-            time: "unspecified", 
-            category: "General", 
-            urgent: false, 
-            note: "⚠️ Using simplified local analysis. Time/Date may be inaccurate.", 
-            effort_score: "Low",
-            status: "Pending" 
+        const getPriorityColor = (score) => {
+            if(score === 'Critical') return 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]';
+            if(score === 'High') return 'bg-orange-500';
+            if(score === 'Medium') return 'bg-indigo-500';
+            return 'bg-emerald-500';
         };
 
-        if (text.match(/urgent|asap|important/i)) {
-            task.urgent = true;
-            task.note = "⚠️ Fallback: This looks urgent!";
-            task.effort_score = "High";
-        }
-        if (text.match(/tomorrow/i)) task.time = "Tomorrow";
-        else if (text.match(/today/i)) task.time = "Today";
+        const today = new Date().toISOString().split('T')[0];
+
+        // 1. PENDING TASKS
+        tasks.sort((a, b) => b.urgent - a.urgent);
         
-        if (text.match(/homework|study|assignment/i)) task.category = "Study";
-        else if (text.match(/meeting|work|project/i)) task.category = "Work";
-
-        return task;
-    }
-
-
-    // ===========================================
-    // AI SUGGESTION LOGIC
-    // ===========================================
-    
-    function handleInput(text) {
-        clearTimeout(suggestionTimeout);
-        let trimmedText = text.trim();
-        let box = document.getElementById("suggestionsBox");
-
-        // Show default message if input is empty
-        if (trimmedText.length === 0) {
-            box.innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>';
-            return;
-        }
-        
-        // Show guidance if input is too short
-        if (trimmedText.length < 3) {
-            box.innerHTML = '<div class="text-center text-slate-400 p-2">Type at least 3 characters for suggestions...</div>';
-            return;
-        }
-        
-        // Debounce logic: calls fetchAISuggestions after 500ms pause
-        suggestionTimeout = setTimeout(() => {
-            fetchAISuggestions(trimmedText);
-        }, 500); 
-    }
-
-    async function fetchAISuggestions(text) {
-        let box = document.getElementById("suggestionsBox");
-        
-        box.innerHTML = '<div class="text-center text-indigo-400 animate-pulse">Loading AI suggestions...</div>';
-
-        try {
-            const response = await fetch(API_SUGGEST_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ partial_task: text })
-            });
-
-            if (!response.ok) { 
-                throw new Error("Suggestion service offline."); 
-            }
-
-            const data = await response.json();
-            const suggestions = data.suggestions || []; 
-
-            box.innerHTML = ""; 
+        tasks.forEach((task, index) => {
+            const isOverdue = (task.time < today && task.time !== 'unspecified' && task.time.match(/^\d{4}-\d{2}-\d{2}/));
+            const urgencyBar = getPriorityColor(task.effort_score);
             
-            if (suggestions.length > 0) {
-                suggestions.forEach(s => {
-                    let btn = document.createElement("button");
-                    // Ensure full width and styling for list appearance
-                    btn.className = "block w-full text-left bg-slate-700 hover:bg-indigo-600/50 p-2 rounded-md transition duration-150";
-                    btn.textContent = s;
-                    btn.onclick = () => {
-                        document.getElementById("taskInput").value = s;
-                        // Clear suggestion box content after selection
-                        box.innerHTML = '<div class="text-center text-slate-400 p-2">Suggestion selected. Ready to add task.</div>';
-                    };
-                    box.appendChild(btn);
-                });
-            } else {
-                 box.innerHTML = '<div class="text-center text-slate-400 p-2">No AI suggestions found.</div>';
-            }
-
-        } catch (error) {
-            // Display connection error within the box
-            box.innerHTML = '<div class="text-center text-red-400">Could not connect to suggestion service.</div>';
-            console.warn("Suggestion fetch failed. API likely unreachable.");
-        }
-    }
-
-
-    // ===========================================
-    // NEW: MULTIMODAL IMAGE ANALYSIS FUNCTION
-    // ===========================================
-    async function analyzeImage() {
-        if (!base64ImageString) {
-            return alert("Please select an image file first.");
-        }
-        
-        const analyzeBtn = document.getElementById('analyzeImageBtn');
-        const originalBtnText = analyzeBtn.textContent;
-        analyzeBtn.textContent = 'Analyzing Image...';
-        analyzeBtn.disabled = true;
-
-        try {
-            const response = await fetch(API_CAPTURE_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    image_data: base64ImageString,
-                    text_prompt: "Extract all tasks, deadlines, and categories from this image and return the results as a list of TaskAnalysis objects." 
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error("Multimodal analysis service failed. Check server logs.");
-            }
-
-            const data = await response.json();
+            const li = document.createElement("li");
+            // Card Styles
+            li.className = "group relative bg-slate-800/60 backdrop-blur-md border border-slate-700 p-5 rounded-2xl hover:bg-slate-800 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1";
             
-            // Integrate Extracted Tasks (assumes backend returns data.extracted_tasks)
-            if (data.extracted_tasks && data.extracted_tasks.length > 0) {
-                data.extracted_tasks.forEach(task => {
-                    tasks.push(task);
-                    scheduleReminder(task);
-                });
-                saveTasks();
-                alert(`${data.extracted_tasks.length} tasks successfully extracted and added!`);
+            li.innerHTML = `
+              <div class="absolute left-0 top-4 bottom-4 w-1.5 rounded-r-full ${urgencyBar}"></div>
+
+              <div class="flex justify-between items-start pl-4">
+                <div class="flex-1 cursor-pointer" onclick="openEditModal(${index})">
+                   <div class="flex items-center gap-3 mb-2">
+                       <h3 class="text-lg font-bold text-slate-100 group-hover:text-indigo-300 transition-colors">${task.text}</h3>
+                       ${isOverdue ? '<span class="text-[10px] font-extrabold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded uppercase tracking-wider">Overdue</span>' : ''}
+                       ${task.urgent ? '<span class="text-[10px] font-extrabold bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded uppercase tracking-wider">Urgent</span>' : ''}
+                   </div>
+                   
+                   <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-400">
+                      <span class="flex items-center gap-1.5 bg-slate-900/50 px-2.5 py-1.5 rounded-lg border border-slate-700/50">
+                        <span>📅</span> ${task.time}
+                      </span>
+                      <span class="flex items-center gap-1.5 bg-slate-900/50 px-2.5 py-1.5 rounded-lg border border-slate-700/50">
+                        <span>🏷</span> ${task.category}
+                      </span>
+                      ${task.note ? `<span class="text-slate-500 italic truncate max-w-[200px] border-l border-slate-700 pl-3">${task.note}</span>` : ''}
+                   </div>
+                </div>
                 
-            } else {
-                alert("Analysis complete, but no tasks were extracted from the image.");
-            }
+                <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button onclick="completeTask(${index})" class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 transition" title="Complete">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </button>
+                    <button onclick="deleteTask(${index})" class="p-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 transition" title="Delete">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+              </div>
+            `;
+            list.appendChild(li);
+        });
 
-        } catch (error) {
-            console.error("Multimodal API Error:", error);
-            alert("ERROR: Failed to analyze image. Check server logs and network.");
-        } finally {
-            analyzeBtn.textContent = originalBtnText;
-            analyzeBtn.disabled = false;
-            base64ImageString = null;
-            document.getElementById('imageInput').value = '';
-        }
+        // 2. COMPLETED TASKS
+        completed.forEach((task) => {
+            const li = document.createElement("li");
+            li.className = "flex justify-between items-center p-4 rounded-xl border border-slate-800 bg-slate-900/40";
+            li.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-5 h-5 rounded-full bg-emerald-900/50 border border-emerald-500/50 flex items-center justify-center">
+                        <svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <div>
+                        <span class="line-through text-slate-500 decoration-2 decoration-slate-600 block">${task.text}</span>
+                        <span class="text-[10px] text-slate-600 uppercase font-bold tracking-wider">${task.category}</span>
+                    </div>
+                </div>
+            `;
+            completedList.appendChild(li);
+        });
+        
+        // Hide suggestions if open
+        document.getElementById("suggestionsBoxContainer").classList.add("hidden");
     }
 
-
-    // ===========================================
-    // AI TASK ANALYSIS LOGIC (Primary with Fallback)
-    // ===========================================
+    // --- API FUNCTIONS ---
 
     async function addTask() {
       let input = document.getElementById("taskInput").value.trim();
       if (!input) return alert("Please enter a task!");
 
-      const addButton = document.querySelector('button[onclick="addTask()"]');
-      const originalButtonText = addButton.textContent;
-      addButton.textContent = 'Analyzing Task...'; 
-      addButton.disabled = true;
+      const btn = document.getElementById('addTaskBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<span>Analyzing...</span>`;
+      btn.disabled = true;
 
       let analyzed = null;
 
@@ -522,296 +309,227 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ task_text: input })
           });
-
-          if (!response.ok) {
-              throw new Error("AI analysis service failed to respond correctly or server is down.");
-          }
-
-          const data = await response.json();
-          analyzed = data;
-          
-          alert("AI analyzed and added task: " + analyzed.text);
-
+          if (!response.ok) throw new Error("API Error");
+          analyzed = await response.json();
       } catch (error) {
-          console.error("Backend connection or API call failed. Falling back to local analysis.", error);
+          console.warn("Fallback to local", error);
           analyzed = analyzeTaskFallback(input);
-          alert("WARNING: AI Service Offline. Task added with simplified local analysis: " + analyzed.text);
       } 
       
       if (analyzed) {
-          analyzed.status = analyzed.status || "Pending";
+          analyzed.status = "Pending";
           tasks.push(analyzed);
-          scheduleReminder(analyzed);
           saveTasks();
+          showList();
+          scheduleReminder(analyzed);
       }
 
       document.getElementById("taskInput").value = "";
-      // Clear suggestion box content after successful submission
-      document.getElementById("suggestionsBox").innerHTML = '<div class="text-center text-slate-400 p-2">Type a task idea to see suggestions...</div>'; 
-
-      addButton.textContent = originalBtnText;
-      addButton.disabled = false;
+      btn.innerHTML = originalText;
+      btn.disabled = false;
     }
 
-    // ===========================================
-    // WEEKLY RETROSPECTIVE AGENT
-    // ===========================================
-    
-    async function generateRetrospective() {
-        const coachModal = document.getElementById('coachModal');
-        const summaryEl = document.getElementById('coachSummary');
-        const scoreEl = document.getElementById('coachScore');
-        const patternsEl = document.getElementById('coachPatterns');
-        const adviceEl = document.getElementById('coachAdvice');
-
-        // Open Modal immediately with loading state
-        coachModal.classList.remove('hidden');
-        summaryEl.innerHTML = '<span class="animate-pulse">🧠 Crunching the numbers... analyzing your habits...</span>';
-        scoreEl.innerText = '--';
-        patternsEl.innerHTML = '';
-        adviceEl.innerHTML = '';
+    async function analyzeImage() {
+        if (!base64ImageString) return; // Should be handled by UI check usually
+        
+        const btn = document.getElementById('addTaskBtn');
+        btn.innerHTML = `<span>Scanning Image...</span>`;
+        btn.disabled = true;
 
         try {
-            const API_RETRO_ENDPOINT = API_BASE_URL + '/api/retrospective';
-            
-            // Prepare payload with both lists
-            const payload = {
-                completed: completed, // Uses your global completed array
-                pending: tasks        // Uses your global pending tasks array
-            };
-
-            const response = await fetch(API_RETRO_ENDPOINT, {
+            const response = await fetch(API_CAPTURE_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ 
+                    image_data: base64ImageString,
+                    text_prompt: "Extract all tasks, deadlines, and categories." 
+                })
             });
 
-            if (!response.ok) throw new Error("Coach agent failed to respond.");
-
+            if (!response.ok) throw new Error("Image API Failed");
             const data = await response.json();
-
-            // Populate Data
-            summaryEl.innerText = data.summary;
             
-            // Animate Score
-            scoreEl.innerText = data.productivity_score;
-            if(data.productivity_score >= 80) scoreEl.className = "text-4xl font-black text-emerald-400";
-            else if(data.productivity_score >= 50) scoreEl.className = "text-4xl font-black text-yellow-400";
-            else scoreEl.className = "text-4xl font-black text-red-400";
-
-            // Populate Lists
-            patternsEl.innerHTML = data.patterns.map(p => 
-                `<li class="flex items-start space-x-2 text-sm text-slate-300"><span class="text-indigo-400 mt-1">●</span><span>${p}</span></li>`
-            ).join('');
-
-            adviceEl.innerHTML = data.advice.map(a => 
-                `<li class="bg-emerald-900/20 border border-emerald-500/20 p-3 rounded-lg text-sm text-emerald-100 flex items-start space-x-2"><span>🚀</span><span>${a}</span></li>`
-            ).join('');
+            if (data.extracted_tasks && data.extracted_tasks.length > 0) {
+                data.extracted_tasks.forEach(task => {
+                    tasks.push(task);
+                    scheduleReminder(task);
+                });
+                saveTasks();
+                showList();
+                alert(`✨ Extracted ${data.extracted_tasks.length} tasks!`);
+            } else {
+                alert("No tasks found in image.");
+            }
 
         } catch (error) {
             console.error(error);
-            summaryEl.innerHTML = '<span class="text-red-400">Error generating report. Do you have enough tasks for me to analyze?</span>';
+            alert("Image analysis failed.");
+        } finally {
+            btn.innerHTML = `<span>Analyze & Add</span>
+             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`;
+            btn.disabled = false;
+            base64ImageString = null;
+            document.getElementById('imageInput').value = '';
+            document.getElementById('fileNameDisplay').innerText = "Drop image for AI analysis...";
+            document.getElementById('fileNameDisplay').classList.remove('text-indigo-300');
         }
     }
 
-    function closeCoachModal() {
-        document.getElementById('coachModal').classList.add('hidden');
-    }
-    
-    // ===========================================
-    // TASK EDITING LOGIC (UPDATE & SAVE)
-    // ===========================================
-
-    function openEditModal(index) {
-        const task = tasks[index];
-
-        document.getElementById('editTaskIndex').value = index;
-        document.getElementById('editText').value = task.text;
+    async function fetchAISuggestions(text) {
+        const box = document.getElementById("suggestionsBox");
+        const container = document.getElementById("suggestionsBoxContainer");
         
-        document.getElementById('editDate').value = formatDateToInput(task.time);
-        
-        document.getElementById('editEffort').value = task.effort_score || 'Unspecified';
+        container.classList.remove("hidden");
+        box.classList.remove("hidden");
+        box.innerHTML = '<div class="text-xs text-slate-500 p-2 animate-pulse">Thinking...</div>';
 
-        document.getElementById('editModal').classList.remove('hidden');
-    }
+        try {
+            const response = await fetch(API_SUGGEST_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ partial_task: text })
+            });
 
-    function closeEditModal() {
-        document.getElementById('editModal').classList.add('hidden');
-    }
-
-    function saveEdit() {
-        const index = document.getElementById('editTaskIndex').value;
-        const task = tasks[index];
-        
-        const newText = document.getElementById('editText').value.trim();
-        const newDate = document.getElementById('editDate').value; 
-        const newEffort = document.getElementById('editEffort').value;
-        
-        task.text = newText;
-        task.effort_score = newEffort === 'Unspecified' ? 'Low' : newEffort;
-        
-        if (newDate) {
-            task.time = newDate; 
-        } else if (newDate === '' && task.time.match(/^\d{4}-\d{2}-\d{2}/)) {
-            task.time = 'unspecified';
+            const data = await response.json();
+            const suggestions = data.suggestions || [];
+            
+            box.innerHTML = "";
+            if (suggestions.length > 0) {
+                suggestions.forEach(s => {
+                    const div = document.createElement("div");
+                    div.className = "p-3 hover:bg-slate-700/50 cursor-pointer text-sm text-slate-300 hover:text-white transition border-b border-slate-700/50 last:border-0";
+                    div.textContent = s;
+                    div.onclick = () => {
+                        document.getElementById("taskInput").value = s;
+                        container.classList.add("hidden");
+                    };
+                    box.appendChild(div);
+                });
+            } else {
+                container.classList.add("hidden");
+            }
+        } catch (e) {
+            container.classList.add("hidden");
         }
+    }
 
-        task.urgent = (task.effort_score === 'High' || task.effort_score === 'Critical');
+    async function generateRetrospective() {
+        const modal = document.getElementById('coachModal');
+        modal.classList.remove('hidden');
+        document.getElementById('coachSummary').innerHTML = '<span class="animate-pulse">🧠 Consulting AI Coach...</span>';
+        
+        try {
+            const response = await fetch(API_RETRO_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed: completed, pending: tasks })
+            });
+            const data = await response.json();
+            
+            document.getElementById('coachSummary').innerText = data.summary;
+            document.getElementById('coachScore').innerText = data.productivity_score;
+            document.getElementById('coachPatterns').innerHTML = data.patterns.map(p => 
+                `<li class="flex items-start gap-2 text-sm text-slate-300"><span class="text-indigo-400 mt-1">●</span>${p}</li>`
+            ).join('');
+            document.getElementById('coachAdvice').innerHTML = data.advice.map(a => 
+                `<li class="bg-emerald-900/10 border border-emerald-500/20 p-3 rounded-lg text-sm text-emerald-100 flex items-start gap-2"><span>🚀</span>${a}</li>`
+            ).join('');
 
-        closeEditModal();
+        } catch (e) {
+            document.getElementById('coachSummary').innerText = "Coach unavailable.";
+        }
+    }
+
+    // --- HELPERS & UTILS ---
+
+    function handleInput(val) {
+        clearTimeout(suggestionTimeout);
+        if(val.length > 3) {
+            suggestionTimeout = setTimeout(() => fetchAISuggestions(val), 600);
+        } else {
+            document.getElementById("suggestionsBoxContainer").classList.add("hidden");
+        }
+    }
+
+    function analyzeTaskFallback(text) {
+        let task = { text, time: "unspecified", category: "General", urgent: false, note: "Local fallback", effort_score: "Low", status: "Pending" };
+        if (text.match(/urgent|asap/i)) { task.urgent = true; task.effort_score = "High"; }
+        if (text.match(/tomorrow/i)) task.time = "Tomorrow";
+        return task;
+    }
+
+    function requestNotificationPermission() {
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+    }
+
+    function scheduleReminder(task) {
+        if (!task.time || task.time === 'unspecified') return;
+        const target = new Date(task.time);
+        const now = new Date();
+        const delay = target.getTime() - now.getTime();
+        
+        if (delay > 0 && delay < 2147483647) {
+            setTimeout(() => {
+                if (Notification.permission === "granted") new Notification("Task Due: " + task.text);
+            }, delay);
+        }
+    }
+
+    // --- DATA PERSISTENCE ---
+    function loadTasks() {
+        const t = localStorage.getItem('ai_tasks');
+        const c = localStorage.getItem('ai_completed');
+        if(t) tasks = JSON.parse(t);
+        if(c) completed = JSON.parse(c);
+    }
+    function saveTasks() {
+        localStorage.setItem('ai_tasks', JSON.stringify(tasks));
+        localStorage.setItem('ai_completed', JSON.stringify(completed));
+    }
+
+    // --- TASK ACTIONS ---
+    function completeTask(index) {
+        tasks[index].status = "Done";
+        completed.push(tasks[index]);
+        tasks.splice(index, 1);
         saveTasks();
         showList();
     }
-    
-    // ===========================================
-    // NEW: DELETE TASK FUNCTION
-    // ===========================================
     function deleteTask(index) {
-        if (confirm("Are you sure you want to permanently delete this task?")) {
-            // Remove the task from the pending array
+        if(confirm("Delete this task?")) {
             tasks.splice(index, 1);
-            
-            // Save the new state and refresh the display
             saveTasks();
             showList();
         }
     }
-
-
-    // ===========================================
-    // TASK MANAGEMENT LOGIC (SHOW LIST & OVERDUE CHECK)
-    // ===========================================
-
-    function showList() {
-        let list = document.getElementById("taskList");
-        let completedList = document.getElementById("completedList");
-        list.innerHTML = "";
-        completedList.innerHTML = "";
-
-        const getTodayString = () => {
-            const d = new Date();
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        };
-        const today = getTodayString();
+    
+    // --- MODAL ACTIONS ---
+    function openEditModal(index) {
+        const task = tasks[index];
+        document.getElementById('editTaskIndex').value = index;
+        document.getElementById('editText').value = task.text;
+        document.getElementById('editDate').value = task.time.match(/^\d{4}-\d{2}-\d{2}/) ? task.time.substring(0, 10) : '';
+        document.getElementById('editEffort').value = task.effort_score || 'Low';
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+    function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+    function closeCoachModal() { document.getElementById('coachModal').classList.add('hidden'); }
+    
+    function saveEdit() {
+        const idx = document.getElementById('editTaskIndex').value;
+        const task = tasks[idx];
+        task.text = document.getElementById('editText').value;
+        const d = document.getElementById('editDate').value;
+        if(d) task.time = d;
+        task.effort_score = document.getElementById('editEffort').value;
+        task.urgent = (task.effort_score === 'High' || task.effort_score === 'Critical');
         
-        tasks.sort((a, b) => b.urgent - a.urgent);
-
-        const getEffortColor = (score) => {
-            switch (score) {
-                case 'Critical': return 'bg-red-700';
-                case 'High': return 'bg-yellow-600';
-                case 'Medium': return 'bg-indigo-600';
-                case 'Low': return 'bg-emerald-600';
-                default: return 'bg-slate-600';
-            }
-        };
-
-        // Pending Tasks
-        tasks.forEach((task, index) => {
-            let li = document.createElement("li");
-            
-            let statusTag = '📌 Pending'; 
-            let timeClass = '';
-            let isOverdue = false;
-
-            if (task.time && task.time.match(/^\d{4}-\d{2}-\d{2}/)) {
-                const taskDate = task.time.substring(0, 10);
-                if (taskDate < today) {
-                    statusTag = '🔴 OVERDUE';
-                    timeClass = 'text-red-400 font-extrabold'; 
-                    isOverdue = true;
-                } else if (taskDate === today) {
-                    statusTag = '🗓️ TODAY';
-                }
-            }
-            
-            if (task.urgent) {
-                statusTag = '🚨 URGENT';
-            } else if (isOverdue) {
-                 statusTag = '🔴 OVERDUE';
-            } else if (statusTag === '📌 Pending' && task.time !== 'unspecified') {
-                 statusTag = '🕒 SCHEDULED';
-            }
-            
-            let urgencyBorder = task.urgent || isOverdue ? 'border-l-4 border-red-500' : 'border-l-4 border-slate-500';
-
-            // Use dynamic text color based on theme
-            const textColor = document.body.classList.contains('light-mode') ? 'text-gray-800' : 'text-slate-100';
-
-            li.className = `p-4 rounded-md bg-slate-700/50 flex flex-col ${urgencyBorder}`;
-            
-            li.innerHTML = `
-              <div class="flex justify-between items-center mb-1">
-                <span onclick="openEditModal(${index})" class="cursor-pointer ${textColor} ${task.urgent || isOverdue ? 'text-red-600 font-extrabold tracking-tight' : 'font-semibold'} hover:text-indigo-600 transition duration-150">
-                  ${task.text}
-                </span>
-                <div class="flex space-x-2">
-                    <button onclick="deleteTask(${index})" class="text-red-500 hover:text-red-600 font-bold p-1 rounded transition duration-150">
-                        🗑️
-                    </button>
-                    <button onclick="completeTask(${index})" class="text-emerald-400 hover:text-emerald-500 font-bold p-1 rounded transition duration-150">✔ Done</button>
-                </div>
-              </div>
-              
-              <p class="text-xs text-slate-400 pt-1 flex items-center justify-between">
-                <span onclick="openEditModal(${index})" class="cursor-pointer hover:text-slate-300 transition duration-150">
-                    <span class="${timeClass}">📅 ${task.time}</span> 
-                    | 🏷 ${task.category}
-                </span>
-                <span class="flex space-x-2">
-                    <span class="font-bold px-2 py-0.5 rounded-full text-slate-100 ${getEffortColor(task.effort_score)} text-[10px]">
-                        ${task.effort_score || 'Effort: N/A'}
-                    </span>
-                    <span class="font-bold px-2 py-0.5 rounded-full text-slate-100 bg-indigo-700/70 text-[10px]">
-                        ${statusTag}
-                    </span>
-                </span>
-              </p>
-              
-              <p class="text-xs text-slate-400 mt-2 italic">${task.note}</p>
-            `;
-            list.appendChild(li);
-        });
-
-        // Completed Tasks
-        completed.forEach(task => {
-            let li = document.createElement("li");
-            li.className = "p-4 rounded-md bg-slate-700/30 flex flex-col opacity-70 border-l-4 border-emerald-500";
-            
-            li.innerHTML = `
-              <div class="flex justify-between items-center">
-                <span class="line-through text-slate-400">${task.text}</span>
-                <span class="text-emerald-300 font-bold">✔ Completed</span>
-              </div>
-              <p class="text-xs text-slate-400 mt-1">📅 ${task.time} | 🏷 ${task.category}</p>
-            `;
-            completedList.appendChild(li);
-        });
-
-        document.getElementById("addTaskScreen").classList.add("hidden");
-        document.getElementById("taskListScreen").classList.remove("hidden");
-    }
-
-    function backToAdd() {
-      document.getElementById("taskListScreen").classList.add("hidden");
-      document.getElementById("addTaskScreen").classList.remove("hidden");
-    }
-
-    function completeTask(index) {
-      tasks[index].status = "Done";
-      completed.push(tasks[index]);
-      tasks.splice(index, 1);
-      saveTasks();
-      showList();
+        saveTasks();
+        showList();
+        closeEditModal();
     }
   </script>
 </body>
 </html>
-
-
-
-
-
