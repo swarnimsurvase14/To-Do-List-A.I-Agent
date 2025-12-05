@@ -23,24 +23,23 @@
     .fade-in { animation: fadeIn 0.5s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    #suggestionsBox::-webkit-scrollbar {
-        width: 6px; /* Thin scrollbar */
-    }
+    .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
 
-    #suggestionsBox::-webkit-scrollbar-track {
-        background: transparent; /* Blends with the container */
-    }
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent; 
+}
 
-    #suggestionsBox::-webkit-scrollbar-thumb {
-        background-color: #475569; /* Slate-600 color */
-        border-radius: 20px;       /* Round edges */
-        border: 2px solid transparent; /* padding around thumb */
-        background-clip: content-box;
-    }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #475569; /* Slate-600 */
+    border-radius: 20px;
+    border: 2px solid #1e293b; /* Matches background for padding effect */
+}
 
-    #suggestionsBox::-webkit-scrollbar-thumb:hover {
-        background-color: #64748b; /* Lighter on hover */
-    }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b; /* Slate-500 */
+}
     
   </style>
 </head>
@@ -75,7 +74,7 @@
           oninput="handleInput(this.value)"></textarea>
          
          <div id="suggestionsBoxContainer" class="absolute left-0 right-0 top-full mt-2 z-50">
-             <div id="suggestionsBox" class="hidden bg-slate-800 border border-slate-600 rounded-xl shadow-2xl p-1 max-h-[200px] overflow-y-auto custom-scrollbar"></div>
+             <div id="suggestionsBox" class="hidden bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 max-h-[200px] overflow-y-auto custom-scrollbar z-50 absolute w-full"></div>
          </div>
       </div>
 
@@ -553,6 +552,7 @@
   </script>
 </body>
 </html>
+
 
 
 
