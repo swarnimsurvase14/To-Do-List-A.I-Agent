@@ -21,9 +21,14 @@
     }
   </style>
 </head>
-<body class="bg-slate-900 flex items-center justify-center min-h-screen text-slate-100 dark-mode">
-  
-  <div class="w-full max-w-2xl bg-slate-800 p-8 rounded-xl shadow-2xl shadow-slate-950/70 card">
+<body class="bg-slate-900 min-h-screen text-slate-100 selection:bg-indigo-500 selection:text-white overflow-x-hidden">
+
+  <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+    <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+  </div>
+
+  <div class="w-full max-w-3xl mx-auto p-6 md:p-12">
     
     <div id="addTaskScreen" class="space-y-5">
       <div class="flex justify-between items-center mb-6">
@@ -805,6 +810,7 @@
   </script>
 </body>
 </html>
+
 
 
 
