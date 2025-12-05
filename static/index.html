@@ -4,67 +4,47 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AI Project Manager (Pro)</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   
   <style>
     body { font-family: 'Inter', sans-serif; }
     
-    /* Custom Scrollbar for Glass Aesthetic */
+    /* Smooth Scrollbar */
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-    /* Hide default file input button */
+    /* Utilities */
     input[type="file"]::file-selector-button { display: none; }
-    
-    /* Smooth fade in for lists */
     .fade-in { animation: fadeIn 0.5s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-       /* TOAST NOTIFICATIONS */
-#toast-container {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.toast {
-    min-width: 300px;
-    padding: 16px;
-    border-radius: 12px;
-    background: rgba(30, 41, 59, 0.9); /* Slate-800 with opacity */
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 0.95rem;
-    font-weight: 500;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    opacity: 0;
-    transform: translateY(20px);
-}
-
-/* Toast Variants */
-.toast.success { border-left: 4px solid #10b981; } /* Emerald */
-.toast.error   { border-left: 4px solid #ef4444; } /* Red */
-.toast.info    { border-left: 4px solid #6366f1; } /* Indigo */
-
-@keyframes slideIn {
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeOut {
-    to { opacity: 0; transform: translateX(10px); }
-}
+    /* TOAST NOTIFICATIONS CSS */
+    #toast-container {
+        position: fixed; bottom: 24px; right: 24px; z-index: 100;
+        display: flex; flex-direction: column; gap: 12px;
+    }
+    .toast {
+        min-width: 300px; padding: 16px; border-radius: 12px;
+        background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white; font-size: 0.95rem; font-weight: 500;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        display: flex; align-items: center; gap: 12px;
+        animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+    .toast.success { border-left: 4px solid #10b981; }
+    .toast.error   { border-left: 4px solid #ef4444; }
+    .toast.info    { border-left: 4px solid #6366f1; }
+    
+    @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateX(10px); } }
   </style>
 </head>
 
@@ -73,27 +53,27 @@
   <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
     <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl animate-pulse"></div>
     <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
-    <div class="absolute top-[40%] left-[40%] w-72 h-72 bg-emerald-600/10 rounded-full blur-3xl mix-blend-screen"></div>
   </div>
+
+  <div id="toast-container"></div>
 
   <div class="w-full max-w-4xl mx-auto p-6 md:p-12">
     
     <div class="flex justify-between items-end mb-10 border-b border-slate-800 pb-6">
       <div>
-        <h1 class="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400">AI Project Manager</h1>
-        <p class="text-slate-400 mt-2 font-light">Intelligent Task Orchestration & Analysis</p>
+        <h1 class="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400">AI Manager</h1>
+        <p class="text-slate-400 mt-2 font-light">Intelligent Task Orchestration</p>
       </div>
       <button onclick="generateRetrospective()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-400 px-5 py-2.5 rounded-xl text-sm font-bold transition shadow-lg hover:shadow-indigo-500/20 flex items-center gap-2 group">
-        <span class="group-hover:rotate-12 transition-transform">📊</span> Weekly Coach Report
+        <span class="group-hover:rotate-12 transition-transform">📊</span> Coach Report
       </button>
     </div>
 
-    <div class="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-2xl mb-12 relative overflow-visible group-focus-within:ring-2 group-focus-within:ring-indigo-500/50 transition-all">
-      
+    <div class="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-2xl mb-12 relative group-focus-within:ring-2 group-focus-within:ring-indigo-500/50 transition-all">
       <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-70"></div>
       
       <div class="relative z-10">
-         <textarea id="taskInput" rows="2" placeholder="✨ Describe a task (e.g. 'Finish report tomorrow at 5pm') or paste an image below..." 
+         <textarea id="taskInput" rows="2" placeholder="✨ Describe a task (e.g. 'Finish report tomorrow at 5pm')..." 
           class="w-full bg-slate-900/60 text-slate-100 p-5 rounded-2xl border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition resize-none placeholder-slate-500 text-lg shadow-inner"
           oninput="handleInput(this.value)"></textarea>
          
@@ -131,132 +111,159 @@
 
        <div class="fade-in">
          <div class="flex items-center gap-3 mb-6 mt-12 border-t border-slate-800 pt-8">
-            <h2 class="text-xl font-bold text-slate-500">Completed History</h2>
+            <h2 class="text-xl font-bold text-slate-500">History</h2>
             <span id="completedCount" class="text-xs font-bold bg-slate-800 text-slate-500 px-2.5 py-1 rounded-full">0</span>
          </div>
          <ul id="completedList" class="space-y-3 opacity-70 hover:opacity-100 transition duration-500">
             </ul>
        </div>
     </div>
+  </div>
 
-  </div> <div id="editModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-    <div class="bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl w-full max-w-md transform transition-all scale-100">
+  <div id="editModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+    <div class="bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl w-full max-w-md">
       <h2 class="text-2xl font-bold mb-6 text-white">Edit Task</h2>
       <input type="hidden" id="editTaskIndex">
-      <div class="space-y-5">
-        <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Description</label>
-          <input type="text" id="editText" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white focus:ring-2 focus:ring-indigo-500 outline-none">
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Due Date</label>
-              <input type="date" id="editDate" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Effort Level</label>
-              <select id="editEffort" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                <option value="Critical">Critical</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-                <option value="Unspecified">Unspecified</option>
-              </select>
-            </div>
-        </div>
+      <div class="space-y-4">
+          <input type="text" id="editText" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white focus:ring-indigo-500 outline-none">
+          <input type="date" id="editDate" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white [color-scheme:dark]">
+          <select id="editEffort" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white">
+            <option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option><option value="Critical">Critical</option>
+          </select>
       </div>
       <div class="flex justify-end space-x-3 mt-8">
-        <button onclick="closeEditModal()" class="px-5 py-2 text-sm font-semibold text-slate-300 hover:text-white transition">Cancel</button>
-        <button onclick="saveEdit()" class="px-6 py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition">Save Changes</button>
+        <button onclick="closeEditModal()" class="px-5 py-2 text-slate-300">Cancel</button>
+        <button onclick="saveEdit()" class="px-6 py-2 text-white bg-indigo-600 rounded-lg">Save</button>
       </div>
     </div>
   </div>
 
   <div id="coachModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
-    <div class="bg-slate-800 rounded-3xl shadow-2xl w-full max-w-xl border border-slate-700 flex flex-col max-h-[85vh] overflow-hidden">
-      <div class="bg-slate-900/50 p-8 border-b border-slate-700 flex justify-between items-center">
-        <div>
-           <h2 class="text-3xl font-extrabold text-white tracking-tight">Weekly Review</h2>
-           <p class="text-indigo-400 text-sm font-medium mt-1">AI Productivity Coach</p>
-        </div>
-        <div class="text-center bg-slate-800 p-3 rounded-xl border border-slate-700">
-            <span id="coachScore" class="text-4xl font-black text-emerald-400 block leading-none">--</span>
-            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mt-1">Score</span>
-        </div>
+    <div class="bg-slate-800 rounded-3xl shadow-2xl w-full max-w-xl border border-slate-700 flex flex-col max-h-[85vh]">
+      <div class="bg-slate-900/50 p-6 border-b border-slate-700 flex justify-between">
+        <h2 class="text-2xl font-bold">Weekly Review</h2>
+        <span id="coachScore" class="text-3xl font-black text-emerald-400">--</span>
       </div>
-      <div class="p-8 overflow-y-auto space-y-8 custom-scrollbar">
-        <div class="bg-indigo-900/20 border border-indigo-500/20 p-5 rounded-xl">
-            <h3 class="text-xs font-bold text-indigo-300 uppercase mb-2 tracking-widest">Executive Summary</h3>
-            <p id="coachSummary" class="text-slate-200 italic leading-relaxed text-lg">Analyzing your week...</p>
-        </div>
-        <div>
-            <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 tracking-widest">Observed Patterns</h3>
-            <ul id="coachPatterns" class="space-y-3"></ul>
-        </div>
-        <div>
-            <h3 class="text-xs font-bold text-emerald-400 uppercase mb-3 tracking-widest">💡 Strategic Advice</h3>
-            <ul id="coachAdvice" class="space-y-3"></ul>
-        </div>
+      <div class="p-8 overflow-y-auto space-y-6">
+        <p id="coachSummary" class="text-slate-200 italic">Analyzing...</p>
+        <ul id="coachPatterns" class="space-y-2"></ul>
+        <ul id="coachAdvice" class="space-y-2"></ul>
       </div>
-      <div class="p-5 border-t border-slate-700 flex justify-end bg-slate-900/30">
-        <button onclick="closeCoachModal()" class="px-8 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition">Close Report</button>
+      <div class="p-5 border-t border-slate-700 flex justify-end">
+        <button onclick="closeCoachModal()" class="px-6 py-2 bg-slate-700 rounded-xl">Close</button>
       </div>
     </div>
   </div>
 
-  <div id="toast-container"></div>
-  
   <script>
+    // --- CONFIGURATION ---
+    // Ensure this points to your running Flask Backend
+    const API_BASE_URL = 'http://127.0.0.1:5000'; 
+    const API_ANALYZE_ENDPOINT = API_BASE_URL + '/api/analyze';
+    const API_SUGGEST_ENDPOINT = API_BASE_URL + '/api/suggest';
+    const API_CAPTURE_ENDPOINT = API_BASE_URL + '/api/capture';
+    const API_RETRO_ENDPOINT = API_BASE_URL + '/api/retrospective';
+
+    // --- STATE ---
     let tasks = [];
     let completed = [];
     let suggestionTimeout = null;
     let base64ImageString = null;
-    
-    // API CONFIG
-    const API_BASE_URL = ''; 
-    const API_ANALYZE_ENDPOINT = '/api/analyze';
-    const API_SUGGEST_ENDPOINT = '/api/suggest';
-    const API_CAPTURE_ENDPOINT = '/api/capture';
-    const API_RETRO_ENDPOINT = '/api/retrospective';
 
-    // --- INITIALIZATION ---
+    // --- INIT ---
     document.addEventListener('DOMContentLoaded', () => {
         loadTasks();
-        showList(); // Render immediately
+        showList();
         requestNotificationPermission();
     });
 
-    // --- FILE HANDLING ---
-    function handleFileSelect(input) {
-        const file = input.files[0];
-        if (file) {
-            document.getElementById('fileNameDisplay').innerText = `📸 ${file.name}`;
-            document.getElementById('fileNameDisplay').classList.add('text-indigo-300');
+    // --- TOAST NOTIFICATIONS (Replaces Alerts) ---
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.5s forwards';
+            setTimeout(() => toast.remove(), 500);
+        }, 3500);
+    }
+
+    // --- CORE TASK LOGIC ---
+    
+    async function addTask() {
+        let input = document.getElementById("taskInput").value.trim();
+        if (!input) return showToast("Please enter a task description!", "error");
+
+        const btn = document.getElementById('addTaskBtn');
+        const originalText = btn.innerHTML;
+        
+        // 1. Set Loading State
+        btn.innerHTML = `<span>Analyzing...</span>`;
+        btn.disabled = true;
+
+        try {
+            let analyzed = null;
             
-            if (file.size > 7 * 1024 * 1024) return alert("File too large. Max 7MB.");
-            
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                base64ImageString = reader.result;
-                // Auto trigger analysis or wait for user to click button?
-                // Let's analyze immediately for better UX
-                analyzeImage(); 
-            };
-            reader.readAsDataURL(file);
+            try {
+                // Try Backend AI
+                const response = await fetch(API_ANALYZE_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_text: input })
+                });
+                if (!response.ok) throw new Error("Backend Offline");
+                analyzed = await response.json();
+                showToast("AI analyzed your task!", "success");
+            } catch (err) {
+                // Fallback to Local
+                console.warn("Using fallback logic", err);
+                analyzed = analyzeTaskFallback(input);
+                showToast("Offline mode: Task added locally.", "info");
+            }
+
+            if (analyzed) {
+                analyzed.status = "Pending";
+                tasks.push(analyzed);
+                saveTasks();
+                showList();
+                document.getElementById("taskInput").value = ""; // Clear input
+            }
+
+        } catch (e) {
+            console.error(e);
+            showToast("Critical Error. Check Console.", "error");
+        } finally {
+            // 2. ALWAYS RESET BUTTON
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         }
     }
 
-    // --- CORE RENDERING ENGINE (The "Cards") ---
     function showList() {
         const list = document.getElementById("taskList");
         const completedList = document.getElementById("completedList");
-        
         list.innerHTML = "";
         completedList.innerHTML = "";
 
         // Update Counts
         document.getElementById("pendingCount").innerText = tasks.length;
         document.getElementById("completedCount").innerText = completed.length;
+
+        // EMPTY STATE
+        if (tasks.length === 0) {
+            list.innerHTML = `
+                <div class="text-center py-12 opacity-40 flex flex-col items-center">
+                    <div class="text-6xl mb-4 grayscale">🏖️</div>
+                    <h3 class="text-xl font-bold text-slate-300">All caught up!</h3>
+                    <p class="text-slate-500">No active tasks. Time to relax or add a new one.</p>
+                </div>
+            `;
+        }
 
         const getPriorityColor = (score) => {
             if(score === 'Critical') return 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]';
@@ -267,348 +274,166 @@
 
         const today = new Date().toISOString().split('T')[0];
 
-        // 1. PENDING TASKS
+        // RENDER PENDING
         tasks.sort((a, b) => b.urgent - a.urgent);
-        
         tasks.forEach((task, index) => {
             const isOverdue = (task.time < today && task.time !== 'unspecified' && task.time.match(/^\d{4}-\d{2}-\d{2}/));
             const urgencyBar = getPriorityColor(task.effort_score);
             
             const li = document.createElement("li");
-            // Card Styles
-            li.className = "group relative bg-slate-800/60 backdrop-blur-md border border-slate-700 p-5 rounded-2xl hover:bg-slate-800 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1";
-            
+            li.className = "group relative bg-slate-800/60 backdrop-blur-md border border-slate-700 p-5 rounded-2xl hover:bg-slate-800 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1";
             li.innerHTML = `
               <div class="absolute left-0 top-4 bottom-4 w-1.5 rounded-r-full ${urgencyBar}"></div>
-
               <div class="flex justify-between items-start pl-4">
                 <div class="flex-1 cursor-pointer" onclick="openEditModal(${index})">
                    <div class="flex items-center gap-3 mb-2">
                        <h3 class="text-lg font-bold text-slate-100 group-hover:text-indigo-300 transition-colors">${task.text}</h3>
-                       ${isOverdue ? '<span class="text-[10px] font-extrabold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded uppercase tracking-wider">Overdue</span>' : ''}
-                       ${task.urgent ? '<span class="text-[10px] font-extrabold bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded uppercase tracking-wider">Urgent</span>' : ''}
+                       ${isOverdue ? '<span class="text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2 rounded uppercase font-bold">Overdue</span>' : ''}
+                       ${task.urgent ? '<span class="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 rounded uppercase font-bold">Urgent</span>' : ''}
                    </div>
-                   
                    <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-400">
-                      <span class="flex items-center gap-1.5 bg-slate-900/50 px-2.5 py-1.5 rounded-lg border border-slate-700/50">
-                        <span>📅</span> ${task.time}
-                      </span>
-                      <span class="flex items-center gap-1.5 bg-slate-900/50 px-2.5 py-1.5 rounded-lg border border-slate-700/50">
-                        <span>🏷</span> ${task.category}
-                      </span>
-                      ${task.note ? `<span class="text-slate-500 italic truncate max-w-[200px] border-l border-slate-700 pl-3">${task.note}</span>` : ''}
+                      <span class="bg-slate-900/50 px-2 py-1 rounded border border-slate-700">📅 ${task.time}</span>
+                      <span class="bg-slate-900/50 px-2 py-1 rounded border border-slate-700">🏷 ${task.category}</span>
                    </div>
                 </div>
-                
-                <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <button onclick="completeTask(${index})" class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 transition" title="Complete">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    </button>
-                    <button onclick="deleteTask(${index})" class="p-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 transition" title="Delete">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
+                <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="completeTask(${index})" class="p-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition">✔</button>
+                    <button onclick="deleteTask(${index})" class="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition">🗑</button>
                 </div>
               </div>
             `;
             list.appendChild(li);
         });
 
-        // 2. COMPLETED TASKS
+        // RENDER COMPLETED
         completed.forEach((task) => {
             const li = document.createElement("li");
             li.className = "flex justify-between items-center p-4 rounded-xl border border-slate-800 bg-slate-900/40";
-            li.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="w-5 h-5 rounded-full bg-emerald-900/50 border border-emerald-500/50 flex items-center justify-center">
-                        <svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                    <div>
-                        <span class="line-through text-slate-500 decoration-2 decoration-slate-600 block">${task.text}</span>
-                        <span class="text-[10px] text-slate-600 uppercase font-bold tracking-wider">${task.category}</span>
-                    </div>
-                </div>
-            `;
+            li.innerHTML = `<span class="line-through text-slate-500">${task.text}</span><span class="text-emerald-500 text-xs font-bold">DONE</span>`;
             completedList.appendChild(li);
         });
         
-        // Hide suggestions if open
         document.getElementById("suggestionsBoxContainer").classList.add("hidden");
     }
 
-    // --- API FUNCTIONS ---
+    function completeTask(index) {
+        // CONFETTI EFFECT
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#a855f7'] });
+        
+        tasks[index].status = "Done";
+        completed.push(tasks[index]);
+        tasks.splice(index, 1);
+        saveTasks();
+        showList();
+        showToast("Great job! Task completed. 🎉", "success");
+    }
 
-    async function addTask() {
-      let input = document.getElementById("taskInput").value.trim();
-      if (!input) return showToast("Please enter a task description.", "error");
+    // --- OTHER HELPERS ---
 
-      if (analyzed) {
-         // ... code ...
-         showToast(`Task added: ${analyzed.text}`, "success");
-      }
-
-      const btn = document.getElementById('addTaskBtn');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = `<span>Analyzing...</span>`;
-      btn.disabled = true;
-
-      let analyzed = null;
-
-      try {
-          const response = await fetch(API_ANALYZE_ENDPOINT, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ task_text: input })
-          });
-          if (!response.ok) throw new Error("API Error");
-          analyzed = await response.json();
-      } catch (error) {
-          console.warn("Fallback to local", error);
-          analyzed = analyzeTaskFallback(input);
-      } 
-      
-      if (analyzed) {
-          analyzed.status = "Pending";
-          tasks.push(analyzed);
-          saveTasks();
-          showList();
-          scheduleReminder(analyzed);
-      }
-
-      document.getElementById("taskInput").value = "";
-      btn.innerHTML = originalText;
-      btn.disabled = false;
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) return showToast("Please upload an image (JPG/PNG).", "error");
+        
+        document.getElementById('fileNameDisplay').innerText = `📸 ${file.name}`;
+        
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            base64ImageString = reader.result;
+            // Auto-Analyze
+            analyzeImage(); 
+        };
+        reader.readAsDataURL(file);
     }
 
     async function analyzeImage() {
-        if (!base64ImageString) return; // Should be handled by UI check usually
-        
+        if (!base64ImageString) return;
         const btn = document.getElementById('addTaskBtn');
-        btn.innerHTML = `<span>Scanning Image...</span>`;
-        btn.disabled = true;
+        btn.innerHTML = `<span>Scanning...</span>`; btn.disabled = true;
 
         try {
             const response = await fetch(API_CAPTURE_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    image_data: base64ImageString,
-                    text_prompt: "Extract all tasks, deadlines, and categories." 
-                })
+                body: JSON.stringify({ image_data: base64ImageString, text_prompt: "Extract tasks" })
             });
-
-            if (!response.ok) throw new Error("Image API Failed");
             const data = await response.json();
             
             if (data.extracted_tasks && data.extracted_tasks.length > 0) {
-                data.extracted_tasks.forEach(task => {
-                    tasks.push(task);
-                    scheduleReminder(task);
-                });
-                saveTasks();
-                showList();
-                showToast(`✨ Successfully extracted ${data.extracted_tasks.length} tasks!`, "success");
+                data.extracted_tasks.forEach(t => tasks.push(t));
+                saveTasks(); showList();
+                showToast(`Extracted ${data.extracted_tasks.length} tasks!`, "success");
             } else {
-                showToast("No readable tasks found in that image.", "info");
+                showToast("No tasks found in image.", "info");
             }
-
-        } catch (error) {
-            console.error(error);
-            alert("Image analysis failed.");
+        } catch (e) {
+            showToast("Image analysis failed.", "error");
         } finally {
-            btn.innerHTML = `<span>Analyze & Add</span>
-             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`;
-            btn.disabled = false;
-            base64ImageString = null;
-            document.getElementById('imageInput').value = '';
+            btn.innerHTML = `<span>Analyze & Add</span>`; btn.disabled = false;
+            base64ImageString = null; document.getElementById('imageInput').value = '';
             document.getElementById('fileNameDisplay').innerText = "Drop image for AI analysis...";
-            document.getElementById('fileNameDisplay').classList.remove('text-indigo-300');
-        }
-    }
-
-    async function fetchAISuggestions(text) {
-        const box = document.getElementById("suggestionsBox");
-        const container = document.getElementById("suggestionsBoxContainer");
-        
-        container.classList.remove("hidden");
-        box.classList.remove("hidden");
-        box.innerHTML = '<div class="text-xs text-slate-500 p-2 animate-pulse">Thinking...</div>';
-
-        try {
-            const response = await fetch(API_SUGGEST_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ partial_task: text })
-            });
-
-            const data = await response.json();
-            const suggestions = data.suggestions || [];
-            
-            box.innerHTML = "";
-            if (suggestions.length > 0) {
-                suggestions.forEach(s => {
-                    const div = document.createElement("div");
-                    div.className = "p-3 hover:bg-slate-700/50 cursor-pointer text-sm text-slate-300 hover:text-white transition border-b border-slate-700/50 last:border-0";
-                    div.textContent = s;
-                    div.onclick = () => {
-                        document.getElementById("taskInput").value = s;
-                        container.classList.add("hidden");
-                    };
-                    box.appendChild(div);
-                });
-            } else {
-                container.classList.add("hidden");
-            }
-        } catch (e) {
-            container.classList.add("hidden");
-        }
-    }
-
-    async function generateRetrospective() {
-        const modal = document.getElementById('coachModal');
-        modal.classList.remove('hidden');
-        document.getElementById('coachSummary').innerHTML = '<span class="animate-pulse">🧠 Consulting AI Coach...</span>';
-        
-        try {
-            const response = await fetch(API_RETRO_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ completed: completed, pending: tasks })
-            });
-            const data = await response.json();
-            
-            document.getElementById('coachSummary').innerText = data.summary;
-            document.getElementById('coachScore').innerText = data.productivity_score;
-            document.getElementById('coachPatterns').innerHTML = data.patterns.map(p => 
-                `<li class="flex items-start gap-2 text-sm text-slate-300"><span class="text-indigo-400 mt-1">●</span>${p}</li>`
-            ).join('');
-            document.getElementById('coachAdvice').innerHTML = data.advice.map(a => 
-                `<li class="bg-emerald-900/10 border border-emerald-500/20 p-3 rounded-lg text-sm text-emerald-100 flex items-start gap-2"><span>🚀</span>${a}</li>`
-            ).join('');
-
-        } catch (e) {
-            document.getElementById('coachSummary').innerText = "Coach unavailable.";
-        }
-    }
-
-    // --- HELPERS & UTILS ---
-
-    function handleInput(val) {
-        clearTimeout(suggestionTimeout);
-        if(val.length > 3) {
-            suggestionTimeout = setTimeout(() => fetchAISuggestions(val), 600);
-        } else {
-            document.getElementById("suggestionsBoxContainer").classList.add("hidden");
         }
     }
 
     function analyzeTaskFallback(text) {
         let task = { text, time: "unspecified", category: "General", urgent: false, note: "Local fallback", effort_score: "Low", status: "Pending" };
         if (text.match(/urgent|asap/i)) { task.urgent = true; task.effort_score = "High"; }
-        if (text.match(/tomorrow/i)) task.time = "Tomorrow";
         return task;
     }
 
-    function requestNotificationPermission() {
-        if ("Notification" in window && Notification.permission !== "granted") {
-            Notification.requestPermission();
-        }
+    function handleInput(val) {
+        clearTimeout(suggestionTimeout);
+        if(val.length > 3) suggestionTimeout = setTimeout(() => fetchAISuggestions(val), 600);
+        else document.getElementById("suggestionsBoxContainer").classList.add("hidden");
     }
 
-    function scheduleReminder(task) {
-        if (!task.time || task.time === 'unspecified') return;
-        const target = new Date(task.time);
-        const now = new Date();
-        const delay = target.getTime() - now.getTime();
-        
-        if (delay > 0 && delay < 2147483647) {
-            setTimeout(() => {
-                if (Notification.permission === "granted") new Notification("Task Due: " + task.text);
-            }, delay);
-        }
+    async function fetchAISuggestions(text) {
+        const box = document.getElementById("suggestionsBox");
+        document.getElementById("suggestionsBoxContainer").classList.remove("hidden");
+        box.classList.remove("hidden");
+        try {
+            const res = await fetch(API_SUGGEST_ENDPOINT, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ partial_task: text }) });
+            const data = await res.json();
+            box.innerHTML = "";
+            (data.suggestions || []).forEach(s => {
+                const div = document.createElement("div");
+                div.className = "p-3 hover:bg-slate-700 cursor-pointer text-sm text-slate-300";
+                div.textContent = s;
+                div.onclick = () => { document.getElementById("taskInput").value = s; document.getElementById("suggestionsBoxContainer").classList.add("hidden"); };
+                box.appendChild(div);
+            });
+        } catch(e) { document.getElementById("suggestionsBoxContainer").classList.add("hidden"); }
     }
 
-    // --- DATA PERSISTENCE ---
-    function loadTasks() {
-        const t = localStorage.getItem('ai_tasks');
-        const c = localStorage.getItem('ai_completed');
-        if(t) tasks = JSON.parse(t);
-        if(c) completed = JSON.parse(c);
+    // Modal & Storage Logic (Standard)
+    function loadTasks() { 
+        const t = localStorage.getItem('ai_tasks'); const c = localStorage.getItem('ai_completed');
+        if(t) tasks = JSON.parse(t); if(c) completed = JSON.parse(c);
     }
-    function saveTasks() {
-        localStorage.setItem('ai_tasks', JSON.stringify(tasks));
-        localStorage.setItem('ai_completed', JSON.stringify(completed));
-    }
-
-    // --- TASK ACTIONS ---
-    function completeTask(index) {
-        tasks[index].status = "Done";
-        completed.push(tasks[index]);
-        tasks.splice(index, 1);
-        saveTasks();
-        showList();
-        showToast("Task completed! Great job!", "success");
-    }
-    function deleteTask(index) {
-        if(confirm("Delete this task?")) {
-            tasks.splice(index, 1);
-            saveTasks();
-            showList();
-        }
-    }
-    
-    // --- MODAL ACTIONS ---
-    function openEditModal(index) {
-        const task = tasks[index];
-        document.getElementById('editTaskIndex').value = index;
-        document.getElementById('editText').value = task.text;
-        document.getElementById('editDate').value = task.time.match(/^\d{4}-\d{2}-\d{2}/) ? task.time.substring(0, 10) : '';
-        document.getElementById('editEffort').value = task.effort_score || 'Low';
-        document.getElementById('editModal').classList.remove('hidden');
-    }
+    function saveTasks() { localStorage.setItem('ai_tasks', JSON.stringify(tasks)); localStorage.setItem('ai_completed', JSON.stringify(completed)); }
+    function deleteTask(index) { if(confirm("Delete?")) { tasks.splice(index, 1); saveTasks(); showList(); showToast("Task deleted", "info"); } }
+    function openEditModal(i) { document.getElementById('editModal').classList.remove('hidden'); document.getElementById('editTaskIndex').value = i; document.getElementById('editText').value = tasks[i].text; }
     function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
     function closeCoachModal() { document.getElementById('coachModal').classList.add('hidden'); }
-    
-    function saveEdit() {
-        const idx = document.getElementById('editTaskIndex').value;
-        const task = tasks[idx];
-        task.text = document.getElementById('editText').value;
-        const d = document.getElementById('editDate').value;
-        if(d) task.time = d;
-        task.effort_score = document.getElementById('editEffort').value;
-        task.urgent = (task.effort_score === 'High' || task.effort_score === 'Critical');
-        
-        saveTasks();
-        showList();
-        closeEditModal();
+    function saveEdit() { 
+        const i = document.getElementById('editTaskIndex').value; 
+        tasks[i].text = document.getElementById('editText').value; 
+        tasks[i].effort_score = document.getElementById('editEffort').value;
+        tasks[i].urgent = (tasks[i].effort_score === 'Critical' || tasks[i].effort_score === 'High');
+        saveTasks(); showList(); closeEditModal(); showToast("Changes saved", "success");
     }
-
-    function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    
-    // Add classes
-    toast.className = `toast ${type}`;
-    
-    // Icon selection
-    let icon = '';
-    if (type === 'success') icon = '<svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-    else if (type === 'error') icon = '<svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-    else icon = '<svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-
-    toast.innerHTML = `${icon} <span>${message}</span>`;
-    
-    container.appendChild(toast);
-
-    // Auto-remove after 3.5 seconds
-    setTimeout(() => {
-        toast.style.animation = 'fadeOut 0.4s forwards';
-        // Wait for animation to finish before removing from DOM
-        setTimeout(() => toast.remove(), 400);
-    }, 3500);
-}
+    async function generateRetrospective() {
+        document.getElementById('coachModal').classList.remove('hidden');
+        try {
+             const res = await fetch(API_RETRO_ENDPOINT, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ completed: completed, pending: tasks }) });
+             const data = await res.json();
+             document.getElementById('coachSummary').innerText = data.summary;
+             document.getElementById('coachScore').innerText = data.productivity_score;
+             document.getElementById('coachPatterns').innerHTML = data.patterns.map(p=>`<li>${p}</li>`).join('');
+             document.getElementById('coachAdvice').innerHTML = data.advice.map(a=>`<li>${a}</li>`).join('');
+        } catch(e) { document.getElementById('coachSummary').innerText = "Coach Offline"; }
+    }
+    function requestNotificationPermission() { if("Notification" in window) Notification.requestPermission(); }
   </script>
 </body>
 </html>
-
-
-
