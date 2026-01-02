@@ -1,3 +1,4 @@
+import requests
 import os
 import json
 from datetime import datetime
@@ -76,42 +77,35 @@ def serve_frontend(path):
 
 # --- ROUTE 2: /api/analyze (Delegated to n8n) ---
 @app.route("/api/analyze", methods=["POST"])
-def analyze_handler():
-    try:
-        data = request.get_json()
-        task_text = data.get("task_text")
-        
-        if not task_text:
-            return jsonify({"error": "Missing task_text"}), 400
+def analyze_task():
+    data = request.json
+    task_text = data.get("task_text", "")
 
-        # If we have an N8N URL, use it
-        if N8N_WEBHOOK_URL:
-            try:
-                # Forward data to n8n
-                n8n_payload = {
-                    "task_text": task_text,
-                    "current_date": get_today_string()
-                }
-                
-                # Send POST request to n8n
-                response = requests.post(N8N_WEBHOOK_URL, json=n8n_payload, timeout=10)
-                response.raise_for_status() # Raise error for bad status codes
-                
-                # Return the JSON from n8n directly to Frontend
-                return jsonify(response.json())
-                
-            except requests.exceptions.RequestException as e:
-                print(f"N8N Error: {e}")
-                # FALLBACK: If n8n is down, you could keep the old LangChain code here
-                # as a backup, or just return an error.
-                return jsonify({"error": "AI Service Unavailable"}), 503
-        
+    # 1. Get the n8n URL from your .env file
+    n8n_url = os.environ.get("N8N_WEBHOOK_URL")
+
+    if not n8n_url:
+        return jsonify({"error": "Configuration Error: N8N_WEBHOOK_URL missing"}), 500
+
+    # 2. Prepare the payload
+    payload = {
+        "task_text": task_text,
+        "current_date": datetime.now().strftime("%Y-%m-%d")
+    }
+
+    try:
+        # 3. Send to n8n and wait (10s timeout)
+        response = requests.post(n8n_url, json=payload, timeout=10)
+
+        # 4. Return the exact JSON n8n sent back
+        if response.status_code == 200:
+            return jsonify(response.json())
         else:
-            return jsonify({"error": "N8N_WEBHOOK_URL not configured"}), 500
+            return jsonify({"error": f"n8n Error: {response.status_code}"}), 500
 
     except Exception as e:
-        print(f"ERROR in analyze_handler: {e}")
-        return jsonify({"error": str(e)}), 500
+        print(f"Error connecting to n8n: {e}")
+        return jsonify({"error": "Failed to connect to AI Agent"}), 500
 
 # --- ROUTE 3: /api/suggest (Dynamic Suggestions) ---
 @app.route("/api/suggest", methods=["POST"])
@@ -255,6 +249,7 @@ def retrospective_handler():
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
 
 
 
