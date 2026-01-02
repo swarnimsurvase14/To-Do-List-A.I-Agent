@@ -74,40 +74,44 @@ def serve_frontend(path):
     return send_from_directory(app.static_folder, path)
 
 
-# --- ROUTE 2: /api/analyze (Text Analysis) ---
+# --- ROUTE 2: /api/analyze (Delegated to n8n) ---
 @app.route("/api/analyze", methods=["POST"])
 def analyze_handler():
     try:
         data = request.get_json()
         task_text = data.get("task_text")
-        current_date_string = get_today_string()
-
+        
         if not task_text:
             return jsonify({"error": "Missing task_text"}), 400
 
-        parser = JsonOutputParser(pydantic_object=TaskAnalysis)
+        # If we have an N8N URL, use it
+        if N8N_WEBHOOK_URL:
+            try:
+                # Forward data to n8n
+                n8n_payload = {
+                    "task_text": task_text,
+                    "current_date": get_today_string()
+                }
+                
+                # Send POST request to n8n
+                response = requests.post(N8N_WEBHOOK_URL, json=n8n_payload, timeout=10)
+                response.raise_for_status() # Raise error for bad status codes
+                
+                # Return the JSON from n8n directly to Frontend
+                return jsonify(response.json())
+                
+            except requests.exceptions.RequestException as e:
+                print(f"N8N Error: {e}")
+                # FALLBACK: If n8n is down, you could keep the old LangChain code here
+                # as a backup, or just return an error.
+                return jsonify({"error": "AI Service Unavailable"}), 503
         
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", 
-             f"You are a professional task analysis engine. The current date is {current_date_string}. "
-             "Your sole purpose is to return ONLY a valid JSON object. "
-             "Strictly format any date found as YYYY-MM-DD. \n"
-             "{format_instructions}"
-            ),
-            ("user", "{user_input}"),
-        ])
-        
-        prompt = prompt.partial(format_instructions=parser.get_format_instructions())
-        chain = prompt | llm | parser
-        
-        result = chain.invoke({"user_input": task_text})
-
-        return jsonify(result)
+        else:
+            return jsonify({"error": "N8N_WEBHOOK_URL not configured"}), 500
 
     except Exception as e:
-        print(f"ERROR in analyze.py: {e}")
-        return jsonify({"error": f"Internal Server Error during AI analysis: {str(e)}"}), 500
-
+        print(f"ERROR in analyze_handler: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # --- ROUTE 3: /api/suggest (Dynamic Suggestions) ---
 @app.route("/api/suggest", methods=["POST"])
@@ -251,6 +255,7 @@ def retrospective_handler():
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
 
 
 
