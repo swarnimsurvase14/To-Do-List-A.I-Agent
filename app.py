@@ -17,6 +17,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 # --- Load Environment Variables ---
 load_dotenv()
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL")
 
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY environment variable not set. Please set it in Render or .env file.")
@@ -250,5 +251,6 @@ def retrospective_handler():
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
 
 
