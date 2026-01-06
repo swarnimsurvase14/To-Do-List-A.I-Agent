@@ -1,4 +1,3 @@
-import requests
 import os
 import json
 from datetime import datetime
@@ -18,7 +17,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 # --- Load Environment Variables ---
 load_dotenv()
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL")
 
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY environment variable not set. Please set it in Render or .env file.")
@@ -75,37 +73,40 @@ def serve_frontend(path):
     return send_from_directory(app.static_folder, path)
 
 
-# --- ROUTE 2: /api/analyze (Delegated to n8n) ---
+# --- ROUTE 2: /api/analyze (Text Analysis) ---
 @app.route("/api/analyze", methods=["POST"])
-def analyze_task():
-    data = request.json
-    task_text = data.get("task_text", "")
-
-    # 1. Get the n8n URL from your .env file
-    n8n_url = os.environ.get("N8N_WEBHOOK_URL")
-
-    if not n8n_url:
-        return jsonify({"error": "Configuration Error: N8N_WEBHOOK_URL missing"}), 500
-
-    # 2. Prepare the payload
-    payload = {
-        "task_text": task_text,
-        "current_date": datetime.now().strftime("%Y-%m-%d")
-    }
-
+def analyze_handler():
     try:
-        # 3. Send to n8n and wait (10s timeout)
-        response = requests.post(n8n_url, json=payload, timeout=10)
+        data = request.get_json()
+        task_text = data.get("task_text")
+        current_date_string = get_today_string()
 
-        # 4. Return the exact JSON n8n sent back
-        if response.status_code == 200:
-            return jsonify(response.json())
-        else:
-            return jsonify({"error": f"n8n Error: {response.status_code}"}), 500
+        if not task_text:
+            return jsonify({"error": "Missing task_text"}), 400
+
+        parser = JsonOutputParser(pydantic_object=TaskAnalysis)
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", 
+             f"You are a professional task analysis engine. The current date is {current_date_string}. "
+             "Your sole purpose is to return ONLY a valid JSON object. "
+             "Strictly format any date found as YYYY-MM-DD. \n"
+             "{format_instructions}"
+            ),
+            ("user", "{user_input}"),
+        ])
+        
+        prompt = prompt.partial(format_instructions=parser.get_format_instructions())
+        chain = prompt | llm | parser
+        
+        result = chain.invoke({"user_input": task_text})
+
+        return jsonify(result)
 
     except Exception as e:
-        print(f"Error connecting to n8n: {e}")
-        return jsonify({"error": "Failed to connect to AI Agent"}), 500
+        print(f"ERROR in analyze.py: {e}")
+        return jsonify({"error": f"Internal Server Error during AI analysis: {str(e)}"}), 500
+
 
 # --- ROUTE 3: /api/suggest (Dynamic Suggestions) ---
 @app.route("/api/suggest", methods=["POST"])
@@ -249,6 +250,9 @@ def retrospective_handler():
 # --- STARTUP COMMAND FOR RENDER (Gunicorn) ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
+
+
 
 
 
